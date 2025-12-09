@@ -1,14 +1,14 @@
 import React from 'react';
-import { PROPOSALS } from '../constants';
-import { CRITERIA, Member, Score, VotesState } from '../types';
+import { CRITERIA, Member, Proposal, Score, VotesState } from '../types';
 
 interface VotingFormProps {
   member: Member;
   votes: VotesState;
+  proposals: Proposal[];
   onVote: (proposalId: string, criteriaIdx: number, score: Score) => void;
 }
 
-const VotingForm: React.FC<VotingFormProps> = ({ member, votes, onVote }) => {
+const VotingForm: React.FC<VotingFormProps> = ({ member, votes, proposals, onVote }) => {
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 mb-6 transition-colors duration-200">
@@ -21,7 +21,7 @@ const VotingForm: React.FC<VotingFormProps> = ({ member, votes, onVote }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {PROPOSALS.map((proposal) => {
+        {proposals.map((proposal) => {
            // Calculate current total for this user/proposal
            const userScores = votes[member.id]?.[proposal.id] || {};
            const currentTotal = Object.values(userScores).reduce((a: number, b) => a + (b as number || 0), 0);
@@ -44,8 +44,8 @@ const VotingForm: React.FC<VotingFormProps> = ({ member, votes, onVote }) => {
                       <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
                         {idx + 1}. {criterion}
                       </label>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 italic bg-slate-50 dark:bg-slate-700/50 p-2 rounded transition-colors duration-200">
-                        "{proposal.descriptions[idx]}"
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 italic bg-slate-50 dark:bg-slate-700/50 p-2 rounded transition-colors duration-200 min-h-[60px]">
+                        "{proposal.descriptions[idx] || 'Sem descrição.'}"
                       </p>
                       
                       <div className="flex items-center gap-2">

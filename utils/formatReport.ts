@@ -1,21 +1,28 @@
-import { MEMBERS, PROPOSALS } from '../constants';
-import { CRITERIA, VotesState } from '../types';
+import { CRITERIA, VotesState, Member, Proposal } from '../types';
 
-export const generateReportText = (votes: VotesState): string => {
+export const generateReportText = (
+  votes: VotesState, 
+  members: Member[], 
+  proposals: Proposal[]
+): string => {
   let report = `EXEMPLO DE PREENCHIMENTO COMPLETO: MATRIZ DE ANÁLISE COMPARATIVA\n`;
-  report += `(Este é o modelo final para o documento, com espaços para a avaliação de todos os 6 integrantes)\n\n`;
+  report += `(Este é o modelo final para o documento, com espaços para a avaliação de todos os ${members.length} integrantes)\n\n`;
 
-  // Header Row
-  report += `Critério de Avaliação\t${PROPOSALS[0].name}\t${PROPOSALS[1].name}\t${PROPOSALS[2].name}\n`;
+  // Header Row - Dynamic
+  report += `Critério de Avaliação`;
+  proposals.forEach(p => {
+    report += `\t${p.name}`;
+  });
+  report += `\n`;
 
   // Criteria Rows
   CRITERIA.forEach((criterion, cIndex) => {
     report += `\n${cIndex + 1}. ${criterion}`;
 
-    PROPOSALS.forEach((proposal) => {
-      report += `\t${proposal.descriptions[cIndex]}<hr>Avaliações da Equipe:<br>`;
+    proposals.forEach((proposal) => {
+      report += `\t${proposal.descriptions[cIndex] || "Sem descrição definida."}<hr>Avaliações da Equipe:<br>`;
       
-      MEMBERS.forEach((member) => {
+      members.forEach((member) => {
         const score = votes[member.id]?.[proposal.id]?.[cIndex];
         const displayScore = score ? ` ${score} ` : ' _ ';
         report += `${member.name}: Nota: [${displayScore}]/5<br>`;
@@ -26,12 +33,12 @@ export const generateReportText = (votes: VotesState): string => {
 
   // Totals Row
   report += `\nPONTUAÇÃO TOTAL`;
-  PROPOSALS.forEach((proposal) => {
+  proposals.forEach((proposal) => {
     report += `\t`;
     let teamTotal = 0;
     let voteCount = 0;
 
-    MEMBERS.forEach((member) => {
+    members.forEach((member) => {
       let memberSum = 0;
       let hasVotes = false;
       for (let i = 0; i < 4; i++) {
@@ -49,7 +56,7 @@ export const generateReportText = (votes: VotesState): string => {
       }
     });
 
-    const average = voteCount > 0 ? (teamTotal / MEMBERS.length).toFixed(1) : ' _ ';
+    const average = voteCount > 0 ? (teamTotal / members.length).toFixed(1) : ' _ ';
     report += `<hr>MÉDIA DA EQUIPE: [ ${average} ]/20`;
   });
 
