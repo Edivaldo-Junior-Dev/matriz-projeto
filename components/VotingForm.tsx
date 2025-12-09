@@ -20,16 +20,16 @@ const VotingForm: React.FC<VotingFormProps> = ({ member, votes, proposals, onVot
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {proposals.map((proposal) => {
            // Calculate current total for this user/proposal
            const userScores = votes[member.id]?.[proposal.id] || {};
            const currentTotal = Object.values(userScores).reduce((a: number, b) => a + (b as number || 0), 0);
 
            return (
-            <div key={proposal.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col h-full transition-colors duration-200">
+            <div key={proposal.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col h-full transition-colors duration-200 hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-800">
               <div className="bg-slate-800 dark:bg-slate-900 p-4 text-white">
-                <h3 className="font-bold text-lg">{proposal.name}</h3>
+                <h3 className="font-bold text-lg leading-tight">{proposal.name}</h3>
                 <div className="mt-2 text-xs uppercase tracking-wider font-semibold text-slate-400">
                   Sua Soma: <span className="text-white text-base">{currentTotal}/20</span>
                 </div>
@@ -48,7 +48,7 @@ const VotingForm: React.FC<VotingFormProps> = ({ member, votes, proposals, onVot
                         "{proposal.descriptions[idx] || 'Sem descrição.'}"
                       </p>
                       
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 justify-between">
                         {[1, 2, 3, 4, 5].map((val) => (
                           <button
                             key={val}

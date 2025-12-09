@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { CRITERIA, Member, Proposal } from '../types';
-import { Upload, Download, RefreshCw, Trash2, Plus, PlusCircle } from 'lucide-react';
+import { Upload, Download, RefreshCw, Trash2, Plus, PlusCircle, Check } from 'lucide-react';
 
 interface ConfigPanelProps {
   members: Member[];
@@ -13,6 +13,7 @@ interface ConfigPanelProps {
   onRemoveProposal: (id: string) => void;
   onImportData: (data: any) => void;
   onReset: () => void;
+  onSaveAndExit: () => void;
 }
 
 const ConfigPanel: React.FC<ConfigPanelProps> = ({ 
@@ -25,7 +26,8 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
   onAddProposal,
   onRemoveProposal,
   onImportData,
-  onReset
+  onReset,
+  onSaveAndExit
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -72,7 +74,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
   };
 
   return (
-    <div className="space-y-12 animate-fade-in max-w-6xl mx-auto pb-20">
+    <div className="space-y-12 animate-fade-in max-w-6xl mx-auto pb-32">
       
       {/* Action Bar */}
       <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -207,6 +209,24 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
            </button>
         </div>
       </section>
+
+      {/* FIXED FOOTER SAVE BUTTON */}
+      <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40">
+        <div className="container mx-auto max-w-6xl flex justify-between items-center">
+            <div className="hidden md:block">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Total de Propostas: <span className="font-bold text-slate-900 dark:text-white">{proposals.length}</span>
+                </p>
+            </div>
+            <button 
+                onClick={onSaveAndExit}
+                className="w-full md:w-auto flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-lg px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95"
+            >
+                <Check size={24} />
+                SALVAR ALTERAÇÕES E VOLTAR
+            </button>
+        </div>
+      </div>
     </div>
   );
 };
