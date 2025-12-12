@@ -52,8 +52,9 @@ const ResultsMatrix: React.FC<ResultsMatrixProps> = ({ votes, members, proposals
             <tr>
               <th className="p-4 w-[250px] min-w-[200px] sticky left-0 z-10 bg-slate-800 dark:bg-slate-900 shadow-[1px_0_0_0_rgba(255,255,255,0.1)]">Critério de Avaliação</th>
               {proposals.map(p => (
-                <th key={p.id} className="p-4 w-[300px] min-w-[300px] bg-slate-700/50 dark:bg-slate-800/50 border-l border-slate-600">
+                <th key={p.id} className={`p-4 w-[300px] min-w-[300px] border-l border-slate-600 ${p.id === winner.id ? 'bg-emerald-900/50 ring-2 ring-inset ring-emerald-500' : 'bg-slate-700/50 dark:bg-slate-800/50'}`}>
                   {p.name}
+                  {p.id === winner.id && <span className="ml-2 text-emerald-400">★</span>}
                 </th>
               ))}
             </tr>
@@ -68,7 +69,7 @@ const ResultsMatrix: React.FC<ResultsMatrixProps> = ({ votes, members, proposals
                   </div>
                 </td>
                 {proposals.map(p => (
-                  <td key={p.id} className="p-4 border-l border-slate-100 dark:border-slate-700 align-top">
+                  <td key={p.id} className={`p-4 border-l border-slate-100 dark:border-slate-700 align-top ${p.id === winner.id ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : ''}`}>
                     <div className="mb-4 text-xs text-slate-500 dark:text-slate-400 italic border-l-2 border-slate-300 dark:border-slate-600 pl-2 min-h-[40px] whitespace-pre-wrap">
                       {p.descriptions[cIdx] || 'Sem descrição.'}
                     </div>
@@ -96,7 +97,7 @@ const ResultsMatrix: React.FC<ResultsMatrixProps> = ({ votes, members, proposals
               {proposals.map(p => {
                  let grandTotal = 0;
                  return (
-                  <td key={p.id} className="p-4 border-l border-slate-200 dark:border-slate-700">
+                  <td key={p.id} className={`p-4 border-l border-slate-200 dark:border-slate-700 ${p.id === winner.id ? 'bg-emerald-100/50 dark:bg-emerald-900/20' : ''}`}>
                     <div className="space-y-1 mb-4">
                       {members.map(m => {
                         const userVotes = votes[m.id]?.[p.id];
@@ -112,9 +113,9 @@ const ResultsMatrix: React.FC<ResultsMatrixProps> = ({ votes, members, proposals
                         );
                       })}
                     </div>
-                    <div className="border-t border-slate-300 dark:border-slate-600 pt-2 flex justify-between items-center bg-white dark:bg-slate-800 p-2 rounded border dark:border-slate-600">
+                    <div className={`border-t pt-2 flex justify-between items-center p-2 rounded border ${p.id === winner.id ? 'bg-emerald-100 border-emerald-300 dark:bg-emerald-900 dark:border-emerald-700' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
                       <span className="text-xs uppercase text-slate-500 dark:text-slate-400">Média Equipe</span>
-                      <span className="text-lg text-accent">{members.length > 0 ? (grandTotal / members.length).toFixed(1) : '0.0'}</span>
+                      <span className={`text-lg ${p.id === winner.id ? 'text-emerald-700 dark:text-emerald-300 font-black' : 'text-accent'}`}>{members.length > 0 ? (grandTotal / members.length).toFixed(1) : '0.0'}</span>
                     </div>
                   </td>
                 );

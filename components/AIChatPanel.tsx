@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Member, Proposal, VotesState, CRITERIA } from '../types';
 import { Send, Bot, Sparkles, Loader2, RefreshCw, FileText, BarChart3, Download, Share2, Printer, Table } from 'lucide-react';
 
-// Correção para o erro de build no Vercel/Vite (missing types for node process)
+// Correção crítica para o erro de build no Vercel (TypeScript não reconhece process no frontend)
 declare const process: any;
 
 interface AIChatPanelProps {
@@ -141,7 +141,8 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
         setMessages(prev => [...prev, { role: 'model', text: response.text || 'Desculpe, não consegui processar a resposta.' }]);
 
     } catch (error) {
-        setMessages(prev => [...prev, { role: 'model', text: 'Erro ao conectar com a IA.' }]);
+        console.error("Erro IA:", error);
+        setMessages(prev => [...prev, { role: 'model', text: 'Erro ao conectar com a IA. Verifique a chave de API.' }]);
     } finally {
         setIsLoadingChat(false);
     }
@@ -156,14 +157,16 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
         const prompt = `
         ${context}
         
-        Aja como um CTO e Product Manager experiente. Realize uma ANÁLISE TÉCNICA para um relatório executivo.
+        Aja como um CTO e Product Manager experiente. Realize uma ANÁLISE TÉCNICA COMPARATIVA para um relatório executivo.
         
-        Estruture a resposta APENAS com texto corrido e bullet points (sem tabelas markdown complexas, pois já tenho tabelas visuais).
+        Estruture a resposta para ser lida facilmente.
         
-        Foque em:
-        1. **Análise de Risco x Retorno** para cada projeto.
-        2. **Gargalos do MVP**: Onde o time vai travar?
-        3. **Recomendação Final**: Qual projeto vence considerando APENAS a viabilidade técnica?
+        Tópicos Obrigatórios:
+        1. **Resumo Executivo**: Qual projeto venceu e por que? (Baseado nos dados e na descrição)
+        2. **Análise de Riscos**: Quais os maiores perigos do projeto vencedor?
+        3. **Pontos de Atenção**: O que precisa ser definido no MVP na próxima semana para não falhar?
+        
+        Use formatação **negrito** para destacar pontos chave.
         `;
 
         const response = await ai.models.generateContent({
@@ -174,7 +177,8 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
         setAnalysisResult(response.text || "Sem análise gerada.");
         setActiveSubTab('text'); 
     } catch (error) {
-        setAnalysisResult("Erro ao gerar análise. Tente novamente.");
+        console.error("Erro IA:", error);
+        setAnalysisResult("Erro ao gerar análise. Verifique a configuração da API Key.");
     } finally {
         setIsAnalyzing(false);
     }
@@ -185,8 +189,27 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
   const handleExportWord = () => {
     if (!reportRef.current) return;
     
+    // Get content
     const content = reportRef.current.innerHTML;
-    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Relatório de Análise</title></head><body>";
+
+    // Add styles specifically for Word/Print to look professional
+    const styles = `
+        <style>
+            body { font-family: 'Calibri', 'Arial', sans-serif; color: #333; line-height: 1.5; }
+            h1 { color: #2E1065; font-size: 24pt; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+            h2 { color: #4C1D95; font-size: 16pt; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #eee; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
+            th { background-color: #F3F4F6; color: #111; font-weight: bold; border: 1px solid #000; padding: 10px; text-align: left; }
+            td { border: 1px solid #000; padding: 10px; vertical-align: top; }
+            .bar-bg { background-color: #E5E7EB; height: 15px; width: 100%; border: 1px solid #9CA3AF; }
+            .bar-fill { height: 100%; background-color: #10B981; }
+            .winner-row { background-color: #ECFDF5; }
+            p { margin-bottom: 10px; }
+            strong { color: #000; }
+        </style>
+    `;
+
+    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Relatório de Análise</title>${styles}</head><body>`;
     const footer = "</body></html>";
     const sourceHTML = header + content + footer;
 
@@ -194,7 +217,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
     const fileDownload = document.createElement("a");
     document.body.appendChild(fileDownload);
     fileDownload.href = source;
-    fileDownload.download = 'relatorio_analise_projeto.doc';
+    fileDownload.download = `relatorio_decisao_projeto_${new Date().toISOString().slice(0,10)}.doc`;
     fileDownload.click();
     document.body.removeChild(fileDownload);
   };
@@ -232,30 +255,48 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
 
   // --- RENDER HELPERS ---
 
+  const formatAIResponse = (text: string) => {
+    if (!text) return null;
+    return text.split('\n').map((line, idx) => {
+        // Simple regex to parse **bold**
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+        return (
+            <div key={idx} className={`min-h-[1.5em] ${line.trim().startsWith('-') || line.trim().startsWith('*') ? 'pl-4 mb-1' : 'mb-3'}`}>
+                {parts.map((part, pIdx) => {
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                        return <strong key={pIdx} className="font-bold text-slate-900 dark:text-slate-100">{part.slice(2, -2)}</strong>;
+                    }
+                    return <span key={pIdx}>{part}</span>;
+                })}
+            </div>
+        );
+    });
+  };
+
   const renderVisualReport = () => (
-    <div ref={reportRef} className="space-y-8 p-4 bg-white dark:bg-slate-100 dark:text-slate-900 rounded-lg">
+    <div ref={reportRef} className="space-y-8 p-6 bg-white dark:bg-slate-100 dark:text-slate-900 rounded-lg shadow-sm">
         {/* Header Report */}
         <div className="border-b-2 border-slate-300 pb-4 mb-4">
-            <h1 className="text-2xl font-bold text-slate-800">Relatório de Decisão de Projeto</h1>
-            <p className="text-slate-600">Gerado automaticamente pela Matriz de Análise Ágil</p>
-            <p className="text-xs text-slate-500 mt-1">Data: {new Date().toLocaleDateString()}</p>
+            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Relatório de Decisão</h1>
+            <p className="text-slate-600 text-lg">Matriz de Análise Comparativa de Projetos</p>
+            <p className="text-sm text-slate-500 mt-2 font-mono">Data da Emissão: {new Date().toLocaleDateString()}</p>
         </div>
 
         {/* Charts Section */}
         <div className="space-y-4">
-            <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                <BarChart3 size={20} /> Gráfico de Desempenho (Média/20)
+            <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 border-b border-slate-200 pb-2">
+                <BarChart3 size={24} className="text-indigo-600" /> Desempenho (Média da Equipe)
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-4 pt-2">
                 {stats.map((stat) => (
                     <div key={stat.id}>
-                        <div className="flex justify-between text-sm mb-1 font-semibold">
+                        <div className="flex justify-between text-sm mb-1 font-semibold text-slate-700">
                             <span>{stat.name}</span>
-                            <span>{stat.average} pts</span>
+                            <span>{stat.average} / 20</span>
                         </div>
-                        <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden border border-slate-300">
+                        <div className="w-full bg-slate-200 rounded-full h-5 overflow-hidden border border-slate-300 bar-bg">
                             <div 
-                                className={`h-full ${stat.id === winner.id ? 'bg-emerald-500' : 'bg-blue-500'}`} 
+                                className={`h-full bar-fill ${stat.id === winner.id ? 'bg-emerald-500' : 'bg-blue-600'}`} 
                                 style={{ width: `${stat.percent}%` }}
                             ></div>
                         </div>
@@ -265,27 +306,29 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
         </div>
 
         {/* Table Section */}
-        <div className="space-y-4 pt-4">
-             <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                <Table size={20} /> Planilha Detalhada
+        <div className="space-y-4 pt-6 page-break-inside-avoid">
+             <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 border-b border-slate-200 pb-2">
+                <Table size={24} className="text-indigo-600" /> Detalhamento Quantitativo
             </h2>
-            <table className="w-full text-sm border-collapse border border-slate-300">
+            <table className="w-full text-sm border-collapse border border-slate-400 mt-4">
                 <thead>
-                    <tr className="bg-slate-200">
-                        <th className="border border-slate-300 p-2 text-left">Projeto</th>
-                        <th className="border border-slate-300 p-2 text-center">Pontos Totais</th>
-                        <th className="border border-slate-300 p-2 text-center">Média Equipe</th>
-                        <th className="border border-slate-300 p-2 text-center">Status</th>
+                    <tr className="bg-slate-100">
+                        <th className="border border-slate-400 p-3 text-left text-slate-800 font-bold">Projeto</th>
+                        <th className="border border-slate-400 p-3 text-center text-slate-800 font-bold">Pontuação Total</th>
+                        <th className="border border-slate-400 p-3 text-center text-slate-800 font-bold">Média</th>
+                        <th className="border border-slate-400 p-3 text-center text-slate-800 font-bold">Classificação</th>
                     </tr>
                 </thead>
                 <tbody>
                     {stats.map((stat, idx) => (
-                         <tr key={stat.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                            <td className="border border-slate-300 p-2 font-medium">{stat.name}</td>
-                            <td className="border border-slate-300 p-2 text-center">{stat.totalPoints}</td>
-                            <td className="border border-slate-300 p-2 text-center font-bold">{stat.average}</td>
-                            <td className="border border-slate-300 p-2 text-center">
-                                {idx === 0 ? '🥇 1º Lugar' : `${idx + 1}º Lugar`}
+                         <tr key={stat.id} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} ${stat.id === winner.id ? 'bg-emerald-50 winner-row' : ''}`}>
+                            <td className="border border-slate-400 p-3 font-medium text-slate-700">
+                                {stat.name} {stat.id === winner.id && '🏆'}
+                            </td>
+                            <td className="border border-slate-400 p-3 text-center text-slate-700">{stat.totalPoints}</td>
+                            <td className="border border-slate-400 p-3 text-center font-bold text-slate-900">{stat.average}</td>
+                            <td className="border border-slate-400 p-3 text-center font-semibold text-slate-700">
+                                {idx === 0 ? '1º Lugar' : `${idx + 1}º Lugar`}
                             </td>
                          </tr>
                     ))}
@@ -295,12 +338,12 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
 
         {/* Text Analysis Section */}
         {analysisResult && (
-            <div className="space-y-4 pt-6 border-t-2 border-slate-300">
-                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                    <Sparkles size={20} /> Parecer Técnico da IA
+            <div className="space-y-4 pt-6 border-t-2 border-slate-300 mt-4">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800">
+                    <Sparkles size={24} className="text-indigo-600" /> Parecer Técnico da IA
                 </h2>
-                <div className="prose max-w-none text-sm text-slate-700 whitespace-pre-wrap leading-relaxed bg-slate-50 p-4 rounded border border-slate-200">
-                    {analysisResult}
+                <div className="prose max-w-none text-sm text-slate-700 leading-relaxed bg-slate-50 p-6 rounded-lg border border-slate-200">
+                    {formatAIResponse(analysisResult)}
                 </div>
             </div>
         )}
@@ -321,10 +364,10 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
             <button 
                 onClick={handleDeepAnalysis}
                 disabled={isAnalyzing}
-                className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm border border-white/10"
             >
                 {isAnalyzing ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
-                {isAnalyzing ? 'Gerando...' : 'Atualizar IA'}
+                {isAnalyzing ? 'Gerando Análise...' : 'Gerar Nova Análise'}
             </button>
         </div>
 
@@ -340,13 +383,13 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
                 onClick={() => setActiveSubTab('text')}
                 className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'text' ? 'bg-white dark:bg-slate-800 border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-indigo-500'}`}
             >
-                <FileText size={16} /> Análise Textual
+                <FileText size={16} /> Texto da IA
             </button>
             <button 
                 onClick={() => setActiveSubTab('export')}
                 className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'export' ? 'bg-white dark:bg-slate-800 border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-emerald-500'}`}
             >
-                <Download size={16} /> Exportar
+                <Download size={16} /> Exportar Doc
             </button>
         </div>
         
@@ -362,12 +405,19 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
             {activeSubTab === 'text' && (
                  <div className="p-6">
                     {analysisResult ? (
-                        <div className="prose dark:prose-invert max-w-none text-sm whitespace-pre-wrap leading-relaxed">
-                            {analysisResult}
+                        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <h3 className="font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <Bot size={20} className="text-purple-500"/> Resposta Completa da IA
+                            </h3>
+                            <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                {formatAIResponse(analysisResult)}
+                            </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-40 text-slate-400">
-                            <p>Clique em "Atualizar IA" para gerar o texto.</p>
+                        <div className="flex flex-col items-center justify-center h-60 text-slate-400 text-center p-8">
+                            <Sparkles size={48} className="mb-4 opacity-20" />
+                            <p className="font-medium mb-2">Nenhuma análise gerada ainda.</p>
+                            <p className="text-xs max-w-xs">Clique no botão "Gerar Nova Análise" no topo para criar um relatório completo baseado nos votos atuais.</p>
                         </div>
                     )}
                  </div>
@@ -375,32 +425,36 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
 
             {activeSubTab === 'export' && (
                 <div className="p-8 flex flex-col gap-6 items-center justify-center h-full">
-                    <h3 className="text-lg font-bold text-slate-700 dark:text-white">Opções de Exportação</h3>
-                    <p className="text-sm text-slate-500 text-center max-w-xs">
-                        Baixe o relatório completo incluindo os gráficos, tabelas e a análise da IA gerada.
-                    </p>
+                    <div className="text-center space-y-2">
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white">Pronto para Exportar?</h3>
+                        <p className="text-sm text-slate-500 max-w-xs mx-auto">
+                            Gere um arquivo Word (.doc) formatado profissionalmente contendo os gráficos, tabelas e a análise da IA.
+                        </p>
+                    </div>
                     
                     <div className="grid grid-cols-1 w-full max-w-xs gap-4">
                         <button 
                             onClick={handleExportWord}
-                            className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-bold shadow-lg transition-transform hover:-translate-y-1"
+                            className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-transform hover:-translate-y-1"
                         >
-                            <FileText size={20} /> Baixar em Word (.doc)
+                            <FileText size={20} /> Baixar Relatório (.doc)
                         </button>
                         
-                        <button 
-                            onClick={handlePrint}
-                            className="flex items-center justify-center gap-3 bg-slate-700 hover:bg-slate-800 text-white py-3 px-6 rounded-xl font-bold shadow-lg transition-transform hover:-translate-y-1"
-                        >
-                            <Printer size={20} /> Imprimir / Salvar PDF
-                        </button>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button 
+                                onClick={handlePrint}
+                                className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-800 text-white py-3 px-4 rounded-xl font-bold shadow-lg transition-transform hover:-translate-y-1 text-xs"
+                            >
+                                <Printer size={16} /> Imprimir / PDF
+                            </button>
 
-                         <button 
-                            onClick={handleCopyText}
-                            className="flex items-center justify-center gap-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-white py-3 px-6 rounded-xl font-bold shadow transition-transform hover:-translate-y-1"
-                        >
-                            <Share2 size={20} /> Copiar Texto da IA
-                        </button>
+                            <button 
+                                onClick={handleCopyText}
+                                className="flex items-center justify-center gap-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-white py-3 px-4 rounded-xl font-bold shadow transition-transform hover:-translate-y-1 text-xs"
+                            >
+                                <Share2 size={16} /> Copiar Texto
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -410,12 +464,12 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
       {/* RIGHT COLUMN: CHAT */}
       <div className="flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-lg">
          <div className="bg-slate-100 dark:bg-slate-750 border-b border-slate-200 dark:border-slate-700 p-4 flex items-center gap-3">
-            <div className="bg-accent text-white p-2 rounded-lg">
+            <div className="bg-accent text-white p-2 rounded-lg shadow-sm">
                 <Bot size={24} />
             </div>
             <div>
-                <h3 className="font-bold text-slate-900 dark:text-white">Assistente da Matriz</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Tire dúvidas sobre os projetos em tempo real</p>
+                <h3 className="font-bold text-slate-900 dark:text-white">Consultor IA</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Tire dúvidas específicas sobre os dados</p>
             </div>
          </div>
 
@@ -428,14 +482,15 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
                             ? 'bg-accent text-white rounded-br-none' 
                             : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-bl-none'}
                     `}>
-                        {msg.text}
+                        {formatAIResponse(msg.text)}
                     </div>
                 </div>
             ))}
             {isLoadingChat && (
                 <div className="flex justify-start">
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-bl-none p-3 shadow-sm">
-                        <Loader2 className="animate-spin text-accent" size={20} />
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-bl-none p-3 shadow-sm flex items-center gap-2">
+                        <Loader2 className="animate-spin text-accent" size={16} />
+                        <span className="text-xs text-slate-500">Digitando...</span>
                     </div>
                 </div>
             )}
@@ -449,13 +504,13 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ex: Qual projeto tem o MVP mais arriscado?"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-accent outline-none resize-none dark:text-white max-h-32"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-accent outline-none resize-none dark:text-white max-h-32 shadow-inner"
                     rows={1}
                 />
                 <button 
                     onClick={handleSendMessage}
                     disabled={!inputText.trim() || isLoadingChat}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-accent text-white rounded-lg hover:bg-sky-600 disabled:opacity-50 disabled:hover:bg-accent transition-colors"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-accent text-white rounded-lg hover:bg-sky-600 disabled:opacity-50 disabled:hover:bg-accent transition-colors shadow-sm"
                 >
                     <Send size={16} />
                 </button>
