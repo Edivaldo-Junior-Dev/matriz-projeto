@@ -6,7 +6,7 @@ export const MEMBERS: Member[] = [
   { id: 'naiara', name: 'Naiara Oliveira' },
   { id: 'emanuel', name: 'Emanuel Heráclio' },
   { id: 'fabiano', name: 'Fabiano Santana' },
-  { id: 'gabriel', name: 'Gabriel Araújo' },
+  { id: 'gabriel', name: 'Gabriel Araujo' },
 ];
 
 export const PROPOSALS: Proposal[] = [
@@ -39,6 +39,16 @@ export const PROPOSALS: Proposal[] = [
       "Análise: Perfeitamente \"fatiável\" em Sprints claros e independentes (frontend, backend, painel).",
       "Análise: Potencial de apresentação excelente. A demonstração ao vivo (\"drag and drop -> link funcionando\") é visual e de alto impacto."
     ]
+  },
+  {
+    id: 'motos',
+    name: 'Proposta 4: Gestão de Motos (Gabriel)',
+    descriptions: [
+      "Análise: Problema de negócio real e bem definido. A justificativa (eficiência, segurança) é forte. Contudo, é um problema externo ao grupo.",
+      "Análise: O MVP é muito claro, mas seu escopo é grande. Envolve múltiplos cadastros, lógica de negócio e um dashboard. O risco de execução é médio a alto.",
+      "Análise: Perfeitamente \"fatiável\" em teoria (módulo de motos, clientes, etc.). Na prática, a interdependência entre os módulos pode complicar os Sprints.",
+      "Análise: Potencial de apresentação excelente, SE o MVP for concluído com sucesso. Um sistema de gestão funcional é impressionante."
+    ]
   }
 ];
 
@@ -47,6 +57,7 @@ export const INITIAL_VOTES: VotesState = {
   edivaldo: {
     ewaste: { 0: 3, 1: 2, 2: 3, 3: 4 },
     profilink: { 0: 2, 1: 1, 2: 1, 3: 2 },
-    portfolio: { 0: 5, 1: 5, 2: 5, 3: 5 }
+    portfolio: { 0: 5, 1: 5, 2: 5, 3: 5 },
+    motos: { 0: 4, 1: 2, 2: 3, 3: 4 }
   }
 };
