@@ -4,8 +4,9 @@ import { Score, VotesState, Member, Proposal } from './types';
 import VotingForm from './components/VotingForm';
 import ResultsMatrix from './components/ResultsMatrix';
 import ConfigPanel from './components/ConfigPanel';
+import AIChatPanel from './components/AIChatPanel';
 import { generateReportText } from './utils/formatReport';
-import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings } from 'lucide-react';
+import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- STATE ---
@@ -23,12 +24,25 @@ const App: React.FC = () => {
   });
 
   // Config: Proposals
+  // UPDATED: Logic to migrate old data structures that might miss the 'link' property
   const [proposals, setProposals] = useState<Proposal[]>(() => {
     const saved = localStorage.getItem('matrix_proposals');
-    return saved ? JSON.parse(saved) : DEFAULT_PROPOSALS;
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            // Migration: Ensure all loaded proposals have a link property
+            return parsed.map((p: any) => ({
+                ...p,
+                link: p.link || '' // Default to empty string if missing
+            }));
+        } catch (e) {
+            return DEFAULT_PROPOSALS;
+        }
+    }
+    return DEFAULT_PROPOSALS;
   });
 
-  const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'config'>('vote');
+  const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'config' | 'ai'>('vote');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -147,7 +161,14 @@ const App: React.FC = () => {
 
   const handleImportConfig = (data: any) => {
     if (data.members) setMembers(data.members);
-    if (data.proposals) setProposals(data.proposals);
+    if (data.proposals) {
+        // Ensure imported proposals have the link field
+        const cleanProposals = data.proposals.map((p: any) => ({
+            ...p,
+            link: p.link || ''
+        }));
+        setProposals(cleanProposals);
+    }
   };
 
   const handleResetConfig = () => {
@@ -222,92 +243,101 @@ const App: React.FC = () => {
       <main className="container mx-auto px-4 mt-8 flex-1 max-w-7xl">
         
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
           
           <button
             onClick={() => setActiveTab('vote')}
             className={`
-              relative group overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 ease-out border-2
+              relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2
               hover:-translate-y-1 hover:shadow-xl
               ${activeTab === 'vote' 
                 ? 'bg-white dark:bg-slate-800 border-accent ring-4 ring-accent/10 shadow-lg' 
                 : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}
             `}
           >
-            <div className={`
-              absolute top-0 right-0 p-32 bg-gradient-to-br from-accent/5 to-transparent rounded-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-150
-              ${activeTab === 'vote' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-            `}></div>
-            
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col h-full justify-between">
               <div className={`
-                w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors duration-300
+                w-10 h-10 rounded-lg flex items-center justify-center mb-2 transition-colors duration-300
                 ${activeTab === 'vote' ? 'bg-accent text-white shadow-lg shadow-accent/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-accent group-hover:text-white'}
               `}>
-                <UserCheck size={24} />
+                <UserCheck size={20} />
               </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Votação Individual</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Selecione seu nome e atribua notas aos projetos.
-              </p>
+              <div>
+                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Votação</h2>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Individual</p>
+              </div>
             </div>
           </button>
 
           <button
             onClick={() => setActiveTab('results')}
             className={`
-              relative group overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 ease-out border-2
+              relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2
               hover:-translate-y-1 hover:shadow-xl
               ${activeTab === 'results' 
                 ? 'bg-white dark:bg-slate-800 border-emerald-500 ring-4 ring-emerald-500/10 shadow-lg' 
                 : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}
             `}
           >
-             <div className={`
-              absolute top-0 right-0 p-32 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-150
-              ${activeTab === 'results' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-            `}></div>
-            
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col h-full justify-between">
               <div className={`
-                w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors duration-300
+                w-10 h-10 rounded-lg flex items-center justify-center mb-2 transition-colors duration-300
                 ${activeTab === 'results' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-emerald-500 group-hover:text-white'}
               `}>
-                <BarChart3 size={24} />
+                <BarChart3 size={20} />
               </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Matriz de Resultados</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Visualize as médias e o projeto vencedor em tempo real.
-              </p>
+              <div>
+                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Resultados</h2>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Matriz Geral</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`
+              relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2
+              hover:-translate-y-1 hover:shadow-xl
+              ${activeTab === 'ai' 
+                ? 'bg-white dark:bg-slate-800 border-indigo-500 ring-4 ring-indigo-500/10 shadow-lg' 
+                : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}
+            `}
+          >
+             <div className="relative z-10 flex flex-col h-full justify-between">
+              <div className={`
+                w-10 h-10 rounded-lg flex items-center justify-center mb-2 transition-colors duration-300
+                ${activeTab === 'ai' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-indigo-500 group-hover:text-white'}
+              `}>
+                <Sparkles size={20} />
+              </div>
+              <div>
+                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Chat & Análise IA</h2>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Consultor Virtual</p>
+              </div>
             </div>
           </button>
 
           <button
             onClick={() => setActiveTab('config')}
             className={`
-              relative group overflow-hidden rounded-2xl p-6 text-left transition-all duration-300 ease-out border-2
+              relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2
               hover:-translate-y-1 hover:shadow-xl
               ${activeTab === 'config' 
                 ? 'bg-white dark:bg-slate-800 border-purple-500 ring-4 ring-purple-500/10 shadow-lg' 
                 : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}
             `}
           >
-             <div className={`
-              absolute top-0 right-0 p-32 bg-gradient-to-br from-purple-500/5 to-transparent rounded-full -mr-16 -mt-16 transition-transform duration-500 group-hover:scale-150
-              ${activeTab === 'config' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-            `}></div>
-
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col h-full justify-between">
               <div className={`
-                w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors duration-300
+                w-10 h-10 rounded-lg flex items-center justify-center mb-2 transition-colors duration-300
                 ${activeTab === 'config' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-purple-500 group-hover:text-white'}
               `}>
-                <Settings size={24} />
+                <Settings size={20} />
               </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Configurar/Editar</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Adicione membros, projetos e edite os textos.
-              </p>
+              <div>
+                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Configurar</h2>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Editar Dados</p>
+              </div>
             </div>
           </button>
 
@@ -369,6 +399,10 @@ const App: React.FC = () => {
 
           {activeTab === 'results' && (
             <ResultsMatrix votes={votes} members={members} proposals={proposals} />
+          )}
+
+          {activeTab === 'ai' && (
+            <AIChatPanel votes={votes} members={members} proposals={proposals} />
           )}
 
           {activeTab === 'config' && (
