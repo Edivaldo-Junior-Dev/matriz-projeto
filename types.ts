@@ -1,6 +1,7 @@
 export interface Proposal {
   id: string;
   name: string;
+  link?: string; // URL to external doc (PDF, Word, Drive)
   descriptions: string[]; // Corresponding to the 4 criteria
 }
 

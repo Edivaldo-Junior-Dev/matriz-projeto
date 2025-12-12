@@ -1,5 +1,6 @@
 import React from 'react';
 import { CRITERIA, Member, Proposal, Score, VotesState } from '../types';
+import { FileText, ExternalLink } from 'lucide-react';
 
 interface VotingFormProps {
   member: Member;
@@ -28,10 +29,25 @@ const VotingForm: React.FC<VotingFormProps> = ({ member, votes, proposals, onVot
 
            return (
             <div key={proposal.id} className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col h-full transition-colors duration-200 hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-800">
-              <div className="bg-slate-800 dark:bg-slate-900 p-4 text-white">
-                <h3 className="font-bold text-lg leading-tight">{proposal.name}</h3>
-                <div className="mt-2 text-xs uppercase tracking-wider font-semibold text-slate-400">
-                  Sua Soma: <span className="text-white text-base">{currentTotal}/20</span>
+              <div className="bg-slate-800 dark:bg-slate-900 p-4 text-white relative">
+                <h3 className="font-bold text-lg leading-tight pr-2">{proposal.name}</h3>
+                <div className="mt-2 flex items-center justify-between">
+                    <div className="text-xs uppercase tracking-wider font-semibold text-slate-400">
+                        Sua Soma: <span className="text-white text-base ml-1">{currentTotal}/20</span>
+                    </div>
+                    {proposal.link && (
+                        <a 
+                            href={proposal.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs py-1 px-3 rounded-full transition-colors border border-white/10"
+                            title="Abrir arquivo do projeto"
+                        >
+                            <FileText size={12} />
+                            <span>Ver Arquivo</span>
+                            <ExternalLink size={10} className="opacity-50" />
+                        </a>
+                    )}
                 </div>
               </div>
               

@@ -115,10 +115,11 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateProposal = (id: string, field: 'name' | 'desc', value: string, descIndex?: number) => {
+  const handleUpdateProposal = (id: string, field: 'name' | 'desc' | 'link', value: string, descIndex?: number) => {
     setProposals(prev => prev.map(p => {
       if (p.id !== id) return p;
       if (field === 'name') return { ...p, name: value };
+      if (field === 'link') return { ...p, link: value };
       if (field === 'desc' && typeof descIndex === 'number') {
         const newDesc = [...p.descriptions];
         newDesc[descIndex] = value;
@@ -133,6 +134,7 @@ const App: React.FC = () => {
     setProposals([...proposals, {
         id: newId,
         name: `Nova Proposta ${proposals.length + 1}`,
+        link: '',
         descriptions: ['', '', '', '']
     }]);
   };

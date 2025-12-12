@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { CRITERIA, Member, Proposal } from '../types';
-import { Upload, Download, RefreshCw, Trash2, Plus, PlusCircle, Check } from 'lucide-react';
+import { Upload, Download, RefreshCw, Trash2, Plus, PlusCircle, Check, Link } from 'lucide-react';
 
 interface ConfigPanelProps {
   members: Member[];
@@ -8,7 +8,7 @@ interface ConfigPanelProps {
   onUpdateMember: (id: string, name: string) => void;
   onAddMember: () => void;
   onRemoveMember: (id: string) => void;
-  onUpdateProposal: (id: string, field: 'name' | 'desc', value: string, descIndex?: number) => void;
+  onUpdateProposal: (id: string, field: 'name' | 'desc' | 'link', value: string, descIndex?: number) => void;
   onAddProposal: () => void;
   onRemoveProposal: (id: string) => void;
   onImportData: (data: any) => void;
@@ -71,6 +71,25 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
     reader.readAsText(file);
     // Reset input
     e.target.value = '';
+  };
+
+  const handleProposalFileUpload = (proposalId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Limit size to avoid localStorage quota exceeded (approx 5MB total usually)
+    if (file.size > 2 * 1024 * 1024) {
+        alert("O arquivo é muito grande (Máx: 2MB). Por favor, use um link externo (Drive/Dropbox) ou comprima o arquivo.");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        if(ev.target?.result) {
+            onUpdateProposal(proposalId, 'link', ev.target.result as string);
+        }
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -161,7 +180,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
               <div key={proposal.id} className="bg-white dark:bg-slate-800 rounded-xl shadow border border-slate-200 dark:border-slate-700 overflow-hidden relative group">
                  
                  {/* Remove Proposal Button */}
-                 <div className="absolute top-2 right-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                 <div className="absolute top-2 right-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-10">
                      <button 
                         onClick={() => onRemoveProposal(proposal.id)}
                         className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded text-xs font-bold shadow-sm"
@@ -171,13 +190,40 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                  </div>
 
                  <div className="bg-slate-100 dark:bg-slate-900 p-4 border-b border-slate-200 dark:border-slate-700 pr-32">
-                    <label className="text-xs font-bold uppercase text-slate-500 mb-1 block">Nome do Projeto</label>
-                    <input 
-                        type="text" 
-                        value={proposal.name} 
-                        onChange={(e) => onUpdateProposal(proposal.id, 'name', e.target.value)}
-                        className="w-full md:w-2/3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 font-bold text-lg dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                    />
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs font-bold uppercase text-slate-500 mb-1 block">Nome do Projeto</label>
+                            <input 
+                                type="text" 
+                                value={proposal.name} 
+                                onChange={(e) => onUpdateProposal(proposal.id, 'name', e.target.value)}
+                                className="w-full md:w-2/3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 font-bold text-lg dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold uppercase text-slate-500 mb-1 flex items-center gap-1">
+                                <Link size={12} /> Link ou Arquivo (PDF/Word)
+                            </label>
+                            <div className="flex gap-2 w-full md:w-2/3">
+                                <input 
+                                    type="text" 
+                                    value={proposal.link || ''} 
+                                    onChange={(e) => onUpdateProposal(proposal.id, 'link', e.target.value)}
+                                    placeholder="https://... ou faça upload"
+                                    className="flex-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded p-2 text-sm dark:text-slate-300 focus:ring-2 focus:ring-accent outline-none"
+                                />
+                                <label className="flex items-center justify-center bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 p-2 rounded cursor-pointer transition-colors min-w-[44px]" title="Fazer Upload de Arquivo (PDF/Word)">
+                                    <Upload size={18} />
+                                    <input 
+                                        type="file" 
+                                        accept=".pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                        className="hidden"
+                                        onChange={(e) => handleProposalFileUpload(proposal.id, e)}
+                                    />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                  </div>
                  
                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
