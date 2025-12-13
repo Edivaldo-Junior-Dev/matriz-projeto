@@ -8,7 +8,7 @@ import AIChatPanel from './components/AIChatPanel';
 import GuidePanel from './components/GuidePanel';
 import LoginPanel from './components/LoginPanel'; // Import Login
 import { generateReportText } from './utils/formatReport';
-import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings, Sparkles, BookOpen, LogOut, Shield } from 'lucide-react';
+import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings, Sparkles, BookOpen, LogOut, Cloud, Save } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- AUTH STATE ---
@@ -53,6 +53,7 @@ const App: React.FC = () => {
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [welcomeToast, setWelcomeToast] = useState(false); // Welcome message state
+  const [lastSaved, setLastSaved] = useState<Date>(new Date());
   
   // Dark mode
   const [darkMode, setDarkMode] = useState(() => {
@@ -65,6 +66,25 @@ const App: React.FC = () => {
 
   // --- EFFECTS (Persistence) ---
 
+  // Sync across tabs (Robustness for sessions)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'matrix_votes' && e.newValue) {
+        setVotes(JSON.parse(e.newValue));
+        setLastSaved(new Date());
+      }
+      if (e.key === 'matrix_members' && e.newValue) {
+        setMembers(JSON.parse(e.newValue));
+      }
+      if (e.key === 'matrix_proposals' && e.newValue) {
+        setProposals(JSON.parse(e.newValue));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Auth Persistence
   useEffect(() => {
     if (currentUser) {
@@ -74,8 +94,10 @@ const App: React.FC = () => {
     }
   }, [currentUser]);
 
+  // Vote Persistence
   useEffect(() => {
     localStorage.setItem('matrix_votes', JSON.stringify(votes));
+    setLastSaved(new Date());
   }, [votes]);
 
   useEffect(() => {
@@ -117,7 +139,6 @@ const App: React.FC = () => {
         }
     } else if (user.role === 'visitor') {
         // VISITOR LOGIC: Create a temporary member entry for them if it doesn't exist
-        // This allows them to use the VotingForm component
         const visitorMemberExists = members.find(m => m.id === user.id);
         
         if (!visitorMemberExists) {
@@ -169,12 +190,24 @@ const App: React.FC = () => {
 
   const resetData = () => {
       if (currentUser?.role !== 'admin') {
-          alert("Apenas administradores podem resetar os dados.");
+          alert("Ação negada: Apenas administradores podem resetar os dados.");
           return;
       }
-      if(window.confirm("Isso apagará APENAS OS VOTOS. Os nomes dos projetos e membros serão mantidos. Continuar?")) {
-          setVotes({});
-          localStorage.removeItem('matrix_votes');
+      
+      const confirmReset = window.confirm(
+          "ATENÇÃO: Você está prestes a LIMPAR TODOS OS VOTOS de todos os membros.\n\n" +
+          "O sistema irá zerar a matriz para uma nova sessão.\n" +
+          "Deseja realmente continuar?"
+      );
+
+      if(confirmReset) {
+          const emptyVotes = {};
+          // 1. Force state update
+          setVotes(emptyVotes);
+          // 2. Force immediate localStorage update to prevent race conditions
+          localStorage.setItem('matrix_votes', JSON.stringify(emptyVotes));
+          
+          alert("A matriz de votação foi limpa com sucesso.");
       }
   }
 
@@ -302,8 +335,13 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">Matriz de Análise</h1>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                  <p className="text-slate-500 text-xs font-medium">Ferramenta de Decisão Ágil</p>
+                 {/* Auto-Save Indicator */}
+                 <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/50">
+                    <Cloud size={12} />
+                    <span>Salvo: {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                 </div>
                  {currentUser.role === 'visitor' && (
                     <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Modo Visitante</span>
                  )}
@@ -480,7 +518,7 @@ const App: React.FC = () => {
                 onClick={resetData} 
                 className="flex items-center gap-2 text-xs text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/10"
             >
-                <Trash2 size={12} /> Limpar Todos os Votos
+                <Trash2 size={12} /> Limpar Todos os Votos (Reset)
             </button>
             </div>
         )}
