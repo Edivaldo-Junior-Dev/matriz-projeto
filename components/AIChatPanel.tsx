@@ -3,9 +3,6 @@ import { GoogleGenAI } from "@google/genai";
 import { Member, Proposal, VotesState, CRITERIA } from '../types';
 import { Send, Bot, Sparkles, Loader2, RefreshCw, FileText, BarChart3, Download, Share2, Printer, Table, Brain, Calculator, CheckCircle2 } from 'lucide-react';
 
-// Correção crítica para o erro de build no Vercel (TypeScript não reconhece process no frontend)
-declare const process: any;
-
 interface AIChatPanelProps {
   proposals: Proposal[];
   members: Member[];

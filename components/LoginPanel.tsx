@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
-import { Lock, Mail, ArrowRight, UserCheck, Shield, HelpCircle, Eye, EyeOff, Building2, Globe } from 'lucide-react';
+import { Lock, Mail, ArrowRight, UserCheck, Shield, HelpCircle, Eye, EyeOff, Building2, Globe, ShieldCheck } from 'lucide-react';
 
 interface LoginPanelProps {
   onLogin: (user: User) => void;
@@ -265,10 +265,5 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
     </div>
   );
 };
-
-// Simple Icon for ShieldCheck since it was missing in imports of some versions
-const ShieldCheck = ({size, className}: {size:number, className?:string}) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-);
 
 export default LoginPanel;
