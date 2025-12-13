@@ -8,7 +8,7 @@ import AIChatPanel from './components/AIChatPanel';
 import GuidePanel from './components/GuidePanel';
 import LoginPanel from './components/LoginPanel'; // Import Login
 import { generateReportText } from './utils/formatReport';
-import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings, Sparkles, BookOpen, LogOut, Cloud, Save } from 'lucide-react';
+import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings, Sparkles, BookOpen, LogOut, Cloud, Save, Layers } from 'lucide-react';
 
 const App: React.FC = () => {
   // --- AUTH STATE ---
@@ -305,6 +305,12 @@ const App: React.FC = () => {
     );
   }
 
+  // --- FILTER DISPLAYED MEMBERS ---
+  // If admin, show everyone. If not, show ONLY the current user to prevent clutter.
+  const displayedMembers = currentUser.role === 'admin' 
+    ? members 
+    : members.filter(m => m.id === selectedMemberId || m.id === currentUser.id);
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       
@@ -330,13 +336,27 @@ const App: React.FC = () => {
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 transition-colors duration-200">
         <div className="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="bg-accent/10 p-2 rounded-lg">
-               <BarChart3 className="text-accent" size={24} />
-            </div>
+             <div className="flex items-center gap-2">
+                 {/* Logo on Header - Small */}
+                 <img 
+                    src="/logo.png" 
+                    onError={(e) => {
+                        e.currentTarget.style.display = 'none'; 
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                    alt="Logo" 
+                    className="h-10 w-auto" 
+                 />
+                 <div className="hidden bg-accent/10 p-2 rounded-lg text-accent">
+                    <Layers size={24} />
+                 </div>
+             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">Matriz de Análise</h1>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight font-sans">
+                Matri<span className="text-accent">Z</span>Cognis
+              </h1>
               <div className="flex items-center gap-4">
-                 <p className="text-slate-500 text-xs font-medium">Ferramenta de Decisão Ágil</p>
+                 <p className="text-slate-500 text-xs font-medium">Análise Comparativa</p>
                  {/* Auto-Save Indicator */}
                  <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/50">
                     <Cloud size={12} />
@@ -536,7 +556,7 @@ const App: React.FC = () => {
                     }
                 </label>
                 <div className="flex flex-wrap justify-center gap-3">
-                  {members.map(member => (
+                  {displayedMembers.map(member => (
                     <button
                       key={member.id}
                       onClick={() => {
@@ -623,7 +643,7 @@ const App: React.FC = () => {
                Desenvolvido por <span className="text-slate-900 dark:text-white font-bold">Edivaldo Junior</span>
             </p>
             <p className="text-accent text-xs font-bold tracking-widest uppercase mt-1">
-               Engenheiro de Software 2025 • v1.2.2 (Visitor Fix)
+               Engenheiro de Software 2025 • v1.2.2 (MatrizCognis)
             </p>
          </div>
       </footer>

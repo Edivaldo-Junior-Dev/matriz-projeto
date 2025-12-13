@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
-import { Lock, Mail, ArrowRight, UserCheck, HelpCircle, Eye, EyeOff, Building2, Globe, Linkedin } from 'lucide-react';
+import { Lock, Mail, ArrowRight, UserCheck, HelpCircle, Eye, EyeOff, Building2, Globe, Linkedin, Layers, User as UserIcon } from 'lucide-react';
 
 interface LoginPanelProps {
   onLogin: (user: User) => void;
@@ -22,10 +22,11 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('edivaldopererialimajunior@gmail.com');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [visitorName, setVisitorName] = useState(''); // Novo estado para nome do visitante
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // CREDENCIAIS ADMINISTRADOR (Mantidas para referência, mas lógica unificada abaixo)
+  // CREDENCIAIS ADMINISTRADOR
   const ADMIN_EMAIL = 'edivaldopererialimajunior@gmail.com';
 
   const handleLogin = (e: React.FormEvent) => {
@@ -54,11 +55,21 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   };
 
   const handleVisitorAccess = (type: 'recruiter' | 'aws') => {
+    if (!visitorName.trim()) {
+        setError('Por favor, digite seu nome para continuar.');
+        return;
+    }
+
     setIsLoading(true);
+    
+    // Personaliza o nome baseado no input + contexto
+    const suffix = type === 'recruiter' ? ' (Recrutador)' : ' (AWS)';
+    const finalName = `${visitorName}${suffix}`;
+
     setTimeout(() => {
       onLogin({
         id: `visitor_${Date.now()}`,
-        name: type === 'recruiter' ? 'Visitante (Recrutador)' : 'Visitante (AWS Team)',
+        name: finalName,
         email: 'guest@matrix.app',
         role: 'visitor'
       });
@@ -80,45 +91,56 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
       </div>
 
-      <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700 w-full max-w-4xl h-[600px] rounded-2xl shadow-2xl flex overflow-hidden z-10 animate-fade-in">
+      <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700 w-full max-w-4xl h-[650px] rounded-2xl shadow-2xl flex overflow-hidden z-10 animate-fade-in">
         
-        {/* Left Column: Visual & Info (Modelo Novo) */}
-        <div className="hidden md:flex flex-col justify-between w-1/2 bg-slate-900 p-12 border-r border-slate-700 relative z-10">
-          <div className="space-y-8 mt-4">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
-                Matriz de Análise Comparativa
-              </h1>
-              <p className="text-slate-400 text-lg leading-relaxed">
-                Ferramenta profissional para análise comparativa e tomada de decisão ágil em projetos de software.
-              </p>
-            </div>
+        {/* Left Column: Brand Identity */}
+        <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-slate-900 p-12 border-r border-slate-700 relative z-10 text-center">
+          
+          {/* Logo Section Centralized */}
+          <div className="flex flex-col items-center justify-center flex-1">
+              <div className="mb-6 relative group">
+                 {/* Logo Image - Centralized above text */}
+                 <img 
+                    src="/logo.png" 
+                    onError={(e) => {
+                        e.currentTarget.style.display = 'none'; // Hide if broken
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden'); // Show fallback
+                    }}
+                    alt="MatriZCognis Logo" 
+                    className="h-40 w-auto drop-shadow-2xl object-contain transition-transform duration-500 group-hover:scale-105" 
+                 />
+                 {/* Fallback Icon if Image Missing */}
+                 <div className="hidden bg-gradient-to-br from-blue-600 to-indigo-600 p-8 rounded-3xl text-white shadow-[0_0_40px_rgba(37,99,235,0.4)]">
+                     <Layers size={80} />
+                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h1 className="text-5xl font-extrabold text-white leading-none font-sans tracking-tight">
+                  Matri<span className="text-blue-500">Z</span>Cognis
+                </h1>
+                <p className="text-slate-500 text-xs uppercase tracking-[0.3em] font-medium">
+                  Matriz de Análise Comparativa
+                </p>
+              </div>
+          </div>
 
-            <p className="text-slate-500 font-mono text-sm">
-              Versão 1.2.2.0
+          <div className="w-full pt-8 border-t border-slate-800/50">
+             <p className="text-slate-400 text-sm leading-relaxed mb-4 max-w-xs mx-auto">
+               Plataforma avançada para tomada de decisão estratégica em projetos de software.
             </p>
-
-            <div className="pt-8">
-              <h3 className="text-white font-bold text-xl mb-2">Desenvolvido por</h3>
-              <p className="text-slate-200 font-medium text-lg">Edivaldo P.L. Junior</p>
-              <p className="text-slate-400">Software Engineer</p>
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-slate-600 text-xs uppercase font-bold">Desenvolvido por</p>
               <a 
                 href="https://www.linkedin.com/in/edivaldojuniordev/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-blue-500 mt-2 inline-flex items-center gap-2 hover:underline hover:text-blue-400 transition-colors"
+                className="text-blue-500 hover:text-blue-400 transition-colors font-medium flex items-center gap-2"
               >
                 <Linkedin size={16} />
-                edivaldojunior.dev
+                Edivaldo Junior
               </a>
             </div>
-          </div>
-
-          <div>
-            <div className="w-full h-px bg-slate-700 my-6"></div>
-            <p className="text-slate-500 text-sm">
-              &copy; 2025 Matriz de Análise Comparativa. Uso educacional e demonstrativo.
-            </p>
           </div>
         </div>
 
@@ -202,38 +224,60 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
 
           {/* VISITOR VIEW */}
           {view === 'visitor' && (
-            <div className="animate-fade-in space-y-6 text-center">
-              <div className="mb-6">
+            <div className="animate-fade-in space-y-4 text-center">
+              <div className="mb-4">
                  <div className="inline-flex items-center justify-center p-4 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full mb-4">
                     <Globe size={32} />
                  </div>
                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Acesso Visitante</h2>
-                 <p className="text-slate-500 text-sm mt-2">Selecione seu perfil de visualização.</p>
+                 <p className="text-slate-500 text-sm mt-2">Identifique-se para acessar a matriz.</p>
               </div>
+
+              {/* INPUT NOME DO VISITANTE */}
+              <div className="text-left">
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1 ml-1">Seu Nome</label>
+                  <div className="relative mb-4">
+                    <UserIcon className="absolute left-3 top-3 text-slate-400" size={18} />
+                    <input 
+                      type="text" 
+                      value={visitorName}
+                      onChange={e => setVisitorName(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                      placeholder="Digite seu nome completo..."
+                      required
+                    />
+                  </div>
+              </div>
+
+              {error && (
+                  <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-xs p-3 rounded flex items-center gap-2 mb-2 text-left">
+                    <HelpCircle size={14} /> {error}
+                  </div>
+              )}
 
               <div className="space-y-3">
                 <button 
                     onClick={() => handleVisitorAccess('recruiter')}
-                    className="w-full p-4 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all flex items-center gap-4 text-left group"
+                    className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all flex items-center gap-4 text-left group"
                 >
                     <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-slate-500 group-hover:text-purple-600">
-                        <UserCheck size={24} />
+                        <UserCheck size={20} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-800 dark:text-white text-sm">Recrutador / Tech Lead</h3>
+                        <h3 className="font-bold text-slate-800 dark:text-white text-sm">Entrar como Recrutador / Tech Lead</h3>
                         <p className="text-xs text-slate-500">Visualizar código e arquitetura.</p>
                     </div>
                 </button>
 
                 <button 
                     onClick={() => handleVisitorAccess('aws')}
-                    className="w-full p-4 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all flex items-center gap-4 text-left group"
+                    className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all flex items-center gap-4 text-left group"
                 >
                     <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-slate-500 group-hover:text-orange-600">
-                        <Building2 size={24} />
+                        <Building2 size={20} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-800 dark:text-white text-sm">Equipe AWS / Cloud</h3>
+                        <h3 className="font-bold text-slate-800 dark:text-white text-sm">Entrar como Equipe AWS / Cloud</h3>
                         <p className="text-xs text-slate-500">Avaliar integração e performance.</p>
                     </div>
                 </button>
@@ -241,7 +285,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
 
               <button 
                 onClick={() => setView('login')}
-                className="mt-6 text-slate-400 hover:text-slate-600 text-sm underline decoration-slate-300 underline-offset-4"
+                className="mt-4 text-slate-400 hover:text-slate-600 text-sm underline decoration-slate-300 underline-offset-4"
               >
                 Voltar para Login
               </button>
