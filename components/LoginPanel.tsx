@@ -1,37 +1,50 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
-import { Lock, Mail, ArrowRight, UserCheck, Shield, HelpCircle, Eye, EyeOff, Building2, Globe, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, ArrowRight, UserCheck, Shield, HelpCircle, Eye, EyeOff, Building2, Globe, ShieldCheck, Users } from 'lucide-react';
 
 interface LoginPanelProps {
   onLogin: (user: User) => void;
 }
 
+// Simulação de Banco de Dados de Usuários
+const REGISTERED_USERS = [
+  { email: 'edivaldopererialimajunior@gmail.com', pass: '19100801', id: 'edivaldo', name: 'Edivaldo Junior', role: 'admin' as UserRole },
+  { email: 'cynthia@matrix.app', pass: '123456', id: 'cynthia', name: 'Cynthia Borelli', role: 'member' as UserRole },
+  { email: 'naiara@matrix.app', pass: '123456', id: 'naiara', name: 'Naiara Oliveira', role: 'member' as UserRole },
+  { email: 'emanuel@matrix.app', pass: '123456', id: 'emanuel', name: 'Emanuel Heráclio', role: 'member' as UserRole },
+  { email: 'fabiano@matrix.app', pass: '123456', id: 'fabiano', name: 'Fabiano Santana', role: 'member' as UserRole },
+  { email: 'gabriel@matrix.app', pass: '123456', id: 'gabriel', name: 'Gabriel Araujo', role: 'member' as UserRole },
+];
+
 const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   const [view, setView] = useState<'login' | 'forgot' | 'visitor'>('login');
-  // Inicializa o campo com o seu email para facilitar o acesso
+  // Inicializa o campo com o seu email para facilitar o acesso, mas permite alteração
   const [email, setEmail] = useState('edivaldopererialimajunior@gmail.com');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // CREDENCIAIS OFICIAIS
+  // CREDENCIAIS ADMINISTRADOR (Mantidas para referência, mas lógica unificada abaixo)
   const ADMIN_EMAIL = 'edivaldopererialimajunior@gmail.com';
-  const ADMIN_PASS = '19100801';
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     // Simulate API delay
     setTimeout(() => {
-      if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASS) {
+      const userFound = REGISTERED_USERS.find(
+        u => u.email.toLowerCase() === email.toLowerCase() && u.pass === password
+      );
+
+      if (userFound) {
         onLogin({
-          id: 'edivaldo', // ID MATCHING CONSTANTS.TS
-          name: 'Edivaldo Junior',
-          email: ADMIN_EMAIL,
-          role: 'admin'
+          id: userFound.id,
+          name: userFound.name,
+          email: userFound.email,
+          role: userFound.role
         });
       } else {
         setError('Credenciais inválidas. Verifique e tente novamente.');
@@ -54,7 +67,6 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
 
   const handleForgotPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    // Como não temos backend, simulamos o envio avisando o usuário
     alert(`SIMULAÇÃO: A solicitação foi enviada para o email centralizador da equipe: ${ADMIN_EMAIL}. Verifique sua caixa de entrada.`);
     setView('login');
   };
@@ -89,8 +101,8 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                 <span>Dados Criptografados (Client-Side)</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                <UserCheck className="text-blue-400" size={18} />
-                <span>Gestão de Identidade</span>
+                <Users className="text-blue-400" size={18} />
+                <span>Acesso Multi-Usuário</span>
               </div>
             </div>
           </div>
@@ -106,13 +118,13 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
           {view === 'login' && (
             <div className="animate-fade-in space-y-6">
               <div>
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Bem-vindo</h2>
-                <p className="text-slate-500 text-sm">Entre com suas credenciais de administrador.</p>
+                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Login</h2>
+                <p className="text-slate-500 text-sm">Acesso para Administradores e Membros.</p>
               </div>
 
-              <form onSubmit={handleAdminLogin} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Email Corporativo</label>
+                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Email Cadastrado</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 text-slate-400" size={18} />
                     <input 
@@ -120,7 +132,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                      placeholder="edivaldopererialimajunior@gmail.com"
+                      placeholder="seu.nome@matrix.app"
                       required
                     />
                   </div>
@@ -145,6 +157,10 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  {/* Hint for demo purposes */}
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    * Membros: Use seu email @matrix.app e senha padrão <strong>123456</strong>
+                  </p>
                 </div>
 
                 {error && (
@@ -158,13 +174,13 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                   disabled={isLoading}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                 >
-                  {isLoading ? 'Autenticando...' : 'Acessar Painel'} <ArrowRight size={18} />
+                  {isLoading ? 'Autenticando...' : 'Acessar Sistema'} <ArrowRight size={18} />
                 </button>
               </form>
               
               <div className="relative flex py-2 items-center">
                 <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-                <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase">Ou acesse como</span>
+                <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase">Ou</span>
                 <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
               </div>
 
@@ -220,7 +236,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                 onClick={() => setView('login')}
                 className="mt-6 text-slate-400 hover:text-slate-600 text-sm underline decoration-slate-300 underline-offset-4"
               >
-                Voltar para Login Administrativo
+                Voltar para Login
               </button>
             </div>
           )}
