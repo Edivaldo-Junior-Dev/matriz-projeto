@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
-import { Lock, Mail, ArrowRight, UserCheck, Shield, HelpCircle, Eye, EyeOff, Building2, Globe, ShieldCheck, Users } from 'lucide-react';
+import { Lock, Mail, ArrowRight, UserCheck, HelpCircle, Eye, EyeOff, Building2, Globe, Linkedin } from 'lucide-react';
 
 interface LoginPanelProps {
   onLogin: (user: User) => void;
@@ -76,38 +76,49 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
       
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[100px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
       </div>
 
       <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700 w-full max-w-4xl h-[600px] rounded-2xl shadow-2xl flex overflow-hidden z-10 animate-fade-in">
         
-        {/* Left Column: Visual & Info */}
-        <div className="hidden md:flex flex-col justify-between w-1/2 bg-gradient-to-br from-slate-800 to-slate-900 p-10 border-r border-slate-700 relative">
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <Shield className="text-white" size={28} />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">Secure Matrix</h1>
+        {/* Left Column: Visual & Info (Modelo Novo) */}
+        <div className="hidden md:flex flex-col justify-between w-1/2 bg-slate-900 p-12 border-r border-slate-700 relative z-10">
+          <div className="space-y-8 mt-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-4 leading-tight">
+                Matriz de Análise Comparativa
+              </h1>
+              <p className="text-slate-400 text-lg leading-relaxed">
+                Ferramenta profissional para análise comparativa e tomada de decisão ágil em projetos de software.
+              </p>
             </div>
-            <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              Ferramenta avançada de análise comparativa para tomada de decisão ágil. 
-              Acesso restrito a membros da equipe e parceiros autorizados.
+
+            <p className="text-slate-500 font-mono text-sm">
+              Versão 1.2.2.0
             </p>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                <ShieldCheck className="text-emerald-400" size={18} />
-                <span>Dados Criptografados (Client-Side)</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                <Users className="text-blue-400" size={18} />
-                <span>Acesso Multi-Usuário</span>
-              </div>
+
+            <div className="pt-8">
+              <h3 className="text-white font-bold text-xl mb-2">Desenvolvido por</h3>
+              <p className="text-slate-200 font-medium text-lg">Edivaldo P.L. Junior</p>
+              <p className="text-slate-400">Software Engineer</p>
+              <a 
+                href="https://www.linkedin.com/in/edivaldojuniordev/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-500 mt-2 inline-flex items-center gap-2 hover:underline hover:text-blue-400 transition-colors"
+              >
+                <Linkedin size={16} />
+                edivaldojunior.dev
+              </a>
             </div>
           </div>
-          <div className="text-xs text-slate-500">
-            &copy; 2025 Edivaldo Junior Dev. All rights reserved.
+
+          <div>
+            <div className="w-full h-px bg-slate-700 my-6"></div>
+            <p className="text-slate-500 text-sm">
+              &copy; 2025 Matriz de Análise Comparativa. Uso educacional e demonstrativo.
+            </p>
           </div>
         </div>
 
