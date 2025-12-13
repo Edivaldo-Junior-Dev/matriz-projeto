@@ -570,7 +570,7 @@ const App: React.FC = () => {
                Desenvolvido por <span className="text-slate-900 dark:text-white font-bold">Edivaldo Junior</span>
             </p>
             <p className="text-accent text-xs font-bold tracking-widest uppercase mt-1">
-               Engenheiro de Software 2025
+               Engenheiro de Software 2025 • v1.2.1 (Patch)
             </p>
          </div>
       </footer>
