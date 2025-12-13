@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { INITIAL_VOTES, MEMBERS as DEFAULT_MEMBERS, PROPOSALS as DEFAULT_PROPOSALS } from './constants';
+import { INITIAL_VOTES, MEMBERS as DEFAULT_MEMBERS, PROPOSALS as DEFAULT_PROPOSALS, CORE_TEAM_IDS } from './constants';
 import { Score, VotesState, Member, Proposal, User } from './types';
 import VotingForm from './components/VotingForm';
 import ResultsMatrix from './components/ResultsMatrix';
@@ -102,16 +102,31 @@ const App: React.FC = () => {
     setWelcomeToast(true);
     setTimeout(() => setWelcomeToast(false), 4000);
     
-    // If Admin logs in, auto-select them if they exist in member list
-    if (user.role === 'admin') {
-        const adminMember = members.find(m => m.id === user.id); // Direct ID Match
-        if (adminMember) {
-            setSelectedMemberId(adminMember.id);
-        } else {
-             // Fallback: Try fuzzy name match if ID fails (for legacy data)
-            const fuzzyMember = members.find(m => m.name.toLowerCase().includes('edivaldo'));
-            if(fuzzyMember) setSelectedMemberId(fuzzyMember.id);
+    // Logic to select the user immediately for voting
+    if (user.role === 'admin' || user.role === 'member') {
+        // Try to match ID directly first
+        let memberMatch = members.find(m => m.id === user.id);
+        
+        // If not found by ID (legacy data), try fuzzy name match
+        if (!memberMatch) {
+             memberMatch = members.find(m => m.name.toLowerCase().includes(user.name.split(' ')[0].toLowerCase()));
         }
+
+        if (memberMatch) {
+            setSelectedMemberId(memberMatch.id);
+        }
+    } else if (user.role === 'visitor') {
+        // VISITOR LOGIC: Create a temporary member entry for them if it doesn't exist
+        // This allows them to use the VotingForm component
+        const visitorMemberExists = members.find(m => m.id === user.id);
+        
+        if (!visitorMemberExists) {
+            const newVisitorMember: Member = { id: user.id, name: user.name };
+            setMembers(prev => [...prev, newVisitorMember]);
+        }
+        
+        // Automatically select the visitor so they can vote immediately
+        setSelectedMemberId(user.id);
     }
   };
 
@@ -128,8 +143,8 @@ const App: React.FC = () => {
   const handleVote = (proposalId: string, criteriaIdx: number, score: Score) => {
     if (!selectedMemberId) return;
 
-    // SECURITY CHECK: Cannot vote if ReadOnly
-    const isReadOnly = currentUser?.role === 'visitor' || (currentUser?.id !== selectedMemberId);
+    // SECURITY CHECK: Cannot vote if ReadOnly (Users can only edit their OWN votes)
+    const isReadOnly = (currentUser?.id !== selectedMemberId);
     if (isReadOnly) return;
 
     setVotes(prev => ({
@@ -174,6 +189,10 @@ const App: React.FC = () => {
   };
 
   const handleRemoveMember = (id: string) => {
+    if (CORE_TEAM_IDS.includes(id)) {
+        alert("Não é possível remover membros da equipe principal (Core Team).");
+        return;
+    }
     if(window.confirm('Tem certeza? Se este membro já votou, os votos dele ficarão órfãos (invisíveis).')) {
         setMembers(members.filter(m => m.id !== id));
         if(selectedMemberId === id) setSelectedMemberId('');
@@ -242,7 +261,7 @@ const App: React.FC = () => {
   const toggleTheme = () => setDarkMode(!darkMode);
 
   const activeMember = members.find(m => m.id === selectedMemberId);
-  const isReadOnly = currentUser?.role === 'visitor' || (currentUser?.id !== selectedMemberId);
+  const isReadOnly = (currentUser?.id !== selectedMemberId); // Simplified logic
 
   // --- RENDER CONDITION: AUTH ---
   if (!currentUser) {
@@ -269,7 +288,7 @@ const App: React.FC = () => {
         <div className="bg-white dark:bg-slate-800 border-l-4 border-blue-500 text-slate-800 dark:text-white px-6 py-4 rounded shadow-xl flex items-center gap-4">
            <div>
              <h4 className="font-bold">Bem-vindo, {currentUser.name}!</h4>
-             <p className="text-xs text-slate-500">Sessão iniciada como {currentUser.role === 'admin' ? 'Administrador' : 'Visitante'}</p>
+             <p className="text-xs text-slate-500">Sessão iniciada como {currentUser.role === 'admin' ? 'Administrador' : currentUser.role === 'visitor' ? 'Visitante' : 'Membro'}</p>
            </div>
         </div>
       </div>
@@ -482,34 +501,30 @@ const App: React.FC = () => {
                   {members.map(member => (
                     <button
                       key={member.id}
-                      onClick={() => setSelectedMemberId(member.id)}
+                      onClick={() => {
+                          // Se o usuário não for admin, nem o próprio membro, bloqueia a seleção? 
+                          // Não, a ideia é permitir ver os votos dos outros, mas não editar.
+                          setSelectedMemberId(member.id)
+                      }}
                       className={`
-                        px-6 py-2.5 rounded-full text-sm font-semibold border transition-all duration-200
+                        px-6 py-2.5 rounded-full text-sm font-semibold border transition-all duration-200 flex items-center gap-2
                         ${selectedMemberId === member.id
                           ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-lg shadow-slate-900/20 scale-105'
                           : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-accent hover:text-accent dark:hover:border-accent dark:hover:text-accent'}
                       `}
                     >
                       {member.name}
+                      {CORE_TEAM_IDS.includes(member.id) && (
+                        <span title="Equipe Oficial" className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      )}
+                      {!CORE_TEAM_IDS.includes(member.id) && (
+                        <span title="Visitante/Outro" className="w-2 h-2 rounded-full bg-orange-400"></span>
+                      )}
                       {member.id === currentUser.id && (
-                        <span className="ml-2 text-[10px] bg-emerald-500 text-white px-1.5 rounded-full">Você</span>
+                        <span className="text-[10px] bg-emerald-500 text-white px-1.5 rounded-full">Você</span>
                       )}
                     </button>
                   ))}
-                  {/* Option for visitor to vote if they aren't in the list, though normally they should add themselves or just watch */}
-                  {currentUser.role === 'visitor' && !members.find(m => m.id === currentUser.id) && (
-                     <button
-                        onClick={() => {
-                            // Temporary Add visitor to member list visually so they can play around
-                            const visitorMember = { id: currentUser.id, name: currentUser.name };
-                            setMembers([...members, visitorMember]);
-                            setSelectedMemberId(visitorMember.id);
-                        }}
-                        className="px-6 py-2.5 rounded-full text-sm font-semibold border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 hover:text-purple-500 hover:border-purple-500 transition-all"
-                     >
-                        + Votar como Visitante
-                     </button>
-                  )}
                 </div>
               </div>
 
@@ -570,7 +585,7 @@ const App: React.FC = () => {
                Desenvolvido por <span className="text-slate-900 dark:text-white font-bold">Edivaldo Junior</span>
             </p>
             <p className="text-accent text-xs font-bold tracking-widest uppercase mt-1">
-               Engenheiro de Software 2025 • v1.2.1 (Patch)
+               Engenheiro de Software 2025 • v1.2.2 (Visitor Fix)
             </p>
          </div>
       </footer>

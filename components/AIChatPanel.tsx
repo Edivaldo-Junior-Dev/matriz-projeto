@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { Member, Proposal, VotesState, CRITERIA } from '../types';
+import { CORE_TEAM_IDS } from '../constants';
 import { Send, Bot, Sparkles, Loader2, RefreshCw, FileText, BarChart3, Download, Share2, Printer, Table, Brain, Calculator, CheckCircle2 } from 'lucide-react';
 
 interface AIChatPanelProps {
@@ -26,7 +27,7 @@ interface AIScoreData {
 const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) => {
   // --- STATE ---
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: 'Olá! Sou seu assistente especialista em Produtos e Agilidade. Posso analisar suas propostas, comparar notas ou ajudar a identificar riscos nos MVPs. Como posso ajudar?' }
+    { role: 'model', text: 'Olá! Sou seu assistente especialista em Produtos e Agilidade. Posso analisar suas propostas, comparar notas da equipe oficial ou ajudar a identificar riscos nos MVPs. Como posso ajudar?' }
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoadingChat, setIsLoadingChat] = useState(false);
@@ -43,9 +44,14 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
 
   // --- HELPERS ---
   const buildContext = () => {
-    let context = `DADOS ATUAIS DA MATRIZ DE ANÁLISE:\n\n`;
+    let context = `DADOS ATUAIS DA MATRIZ DE ANÁLISE (EQUIPE OFICIAL):\n\n`;
     
     context += `CRITÉRIOS:\n${CRITERIA.map((c, i) => `${i+1}. ${c}`).join('\n')}\n\n`;
+
+    const coreStats = calculateStats();
+    const winner = coreStats[0];
+
+    context += `VENCEDOR ATUAL: ${winner.name} com média ${winner.average}/20.\n\n`;
 
     context += `PROPOSTAS E DESCRIÇÕES (Use isso para avaliar):\n`;
     proposals.forEach(p => {
@@ -60,11 +66,14 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
   };
 
   const calculateStats = () => {
+    // Only use CORE members for official stats
+    const coreMembers = members.filter(m => CORE_TEAM_IDS.includes(m.id));
+
     return proposals.map(p => {
         let totalPoints = 0;
         let voteCount = 0;
         
-        members.forEach(m => {
+        coreMembers.forEach(m => {
             const userVotes = votes[m.id]?.[p.id];
             if(userVotes) {
                 Object.values(userVotes).forEach(v => {
@@ -77,7 +86,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
             }
         });
 
-        const rawAverage = voteCount > 0 ? (totalPoints / members.length) : 0; 
+        const rawAverage = voteCount > 0 ? (totalPoints / voteCount) : 0; 
         
         return {
             id: p.id,
@@ -213,7 +222,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
         Estruture a resposta para ser lida facilmente.
         
         Tópicos Obrigatórios:
-        1. **Resumo Executivo**: Qual projeto venceu e por que? (Baseado nos dados e na descrição)
+        1. **Resumo Executivo**: Qual projeto venceu na equipe oficial e por que?
         2. **Análise de Riscos**: Quais os maiores perigos do projeto vencedor?
         3. **Pontos de Atenção**: O que precisa ser definido no MVP na próxima semana para não falhar?
         
@@ -423,8 +432,8 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
     <div ref={reportRef} className="space-y-8 p-6 bg-white dark:bg-slate-100 dark:text-slate-900 rounded-lg shadow-sm">
         {/* Header Report */}
         <div className="border-b-2 border-slate-300 pb-4 mb-4">
-            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Relatório de Decisão</h1>
-            <p className="text-slate-600 text-lg">Matriz de Análise Comparativa de Projetos</p>
+            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Relatório de Decisão Oficial</h1>
+            <p className="text-slate-600 text-lg">Matriz de Análise Comparativa (Equipe Técnica)</p>
             <p className="text-sm text-slate-500 mt-2 font-mono">Data da Emissão: {new Date().toLocaleDateString()}</p>
         </div>
 

@@ -1,5 +1,8 @@
 import { Member, Proposal, VotesState } from './types';
 
+// IDs fixos da equipe oficial para cálculos de média e relatórios
+export const CORE_TEAM_IDS = ['edivaldo', 'cynthia', 'naiara', 'emanuel', 'fabiano', 'gabriel'];
+
 export const MEMBERS: Member[] = [
   { id: 'edivaldo', name: 'Edivaldo Junior' },
   { id: 'cynthia', name: 'Cynthia Borelli' },
