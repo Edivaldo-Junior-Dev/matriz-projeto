@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { Member, Proposal, VotesState, CRITERIA } from '../types';
-import { Send, Bot, Sparkles, Loader2, RefreshCw, FileText, BarChart3, Download, Share2, Printer, Table } from 'lucide-react';
+import { Send, Bot, Sparkles, Loader2, RefreshCw, FileText, BarChart3, Download, Share2, Printer, Table, Brain, Calculator, CheckCircle2 } from 'lucide-react';
 
 // Correção crítica para o erro de build no Vercel (TypeScript não reconhece process no frontend)
 declare const process: any;
@@ -17,6 +17,15 @@ interface Message {
   text: string;
 }
 
+// Interface para a pontuação gerada pela IA
+interface AIScoreData {
+  proposalId: string;
+  proposalName: string;
+  scores: number[]; // [criterion0, criterion1, criterion2, criterion3]
+  reasoning: string[]; // Explicação para cada nota
+  totalScore: number;
+}
+
 const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) => {
   // --- STATE ---
   const [messages, setMessages] = useState<Message[]>([
@@ -26,10 +35,11 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   
   const [analysisResult, setAnalysisResult] = useState<string>('');
+  const [aiScores, setAiScores] = useState<AIScoreData[] | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // New State for Sub-panels
-  const [activeSubTab, setActiveSubTab] = useState<'text' | 'visual' | 'export'>('visual');
+  const [activeSubTab, setActiveSubTab] = useState<'visual' | 'ai-scoring' | 'text' | 'export'>('visual');
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const reportRef = useRef<HTMLDivElement>(null);
@@ -40,32 +50,13 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
     
     context += `CRITÉRIOS:\n${CRITERIA.map((c, i) => `${i+1}. ${c}`).join('\n')}\n\n`;
 
-    context += `PROPOSTAS:\n`;
+    context += `PROPOSTAS E DESCRIÇÕES (Use isso para avaliar):\n`;
     proposals.forEach(p => {
         context += `- ID: ${p.id}\n`;
         context += `  Nome: ${p.name}\n`;
         context += `  Descrições/Análises atuais:\n`;
-        p.descriptions.forEach((d, i) => context += `    ${i+1}: ${d}\n`);
-    });
-
-    context += `\nVOTOS (0 = não votou, 1-5 = nota):\n`;
-    proposals.forEach(p => {
-        let total = 0;
-        let count = 0;
-        members.forEach(m => {
-            const votesForProp = votes[m.id]?.[p.id];
-            if (votesForProp) {
-                Object.values(votesForProp).forEach((v) => {
-                    const val = v as number;
-                    if (val > 0) {
-                        total += val;
-                        count++;
-                    }
-                });
-            }
-        });
-        const avg = count > 0 ? (total / count).toFixed(1) : "0";
-        context += `  Projeto "${p.name}": Média Geral Aprox: ${avg}\n`;
+        p.descriptions.forEach((d, i) => context += `    Critério ${i+1}: ${d || "Sem descrição"}\n`);
+        context += `----------------\n`;
     });
 
     return context;
@@ -145,6 +136,69 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
         setMessages(prev => [...prev, { role: 'model', text: 'Erro ao conectar com a IA. Verifique a chave de API.' }]);
     } finally {
         setIsLoadingChat(false);
+    }
+  };
+
+  // --- NEW FEATURE: AI SCORING (Pontuação Automática) ---
+  const handleAIScoring = async () => {
+    setIsAnalyzing(true);
+    setActiveSubTab('ai-scoring');
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        
+        // Construct a purely data-driven prompt
+        let dataPrompt = `Analise as seguintes propostas baseando-se estritamente nas descrições fornecidas para cada critério.\n`;
+        dataPrompt += `CRITÉRIOS DE 1 a 5 (1=Péssimo/Alto Risco, 5=Excelente/Baixo Risco):\n`;
+        CRITERIA.forEach((c, i) => dataPrompt += `${i+1}. ${c}\n`);
+        
+        dataPrompt += `\nPROPOSTAS:\n`;
+        proposals.forEach(p => {
+             dataPrompt += `ID: ${p.id} | Nome: ${p.name}\n`;
+             p.descriptions.forEach((d, i) => dataPrompt += `  Critério ${i+1}: ${d || "Vazio"}\n`);
+        });
+
+        const prompt = `
+        ${dataPrompt}
+        
+        TAREFA: Como um Juiz Técnico Imparcial, atribua notas de 1 a 5 para cada critério de cada proposta.
+        
+        Retorne APENAS um JSON seguindo estritamente este schema:
+        [
+          {
+            "proposalId": "string (o id da proposta)",
+            "proposalName": "string",
+            "scores": [number, number, number, number], // notas para os 4 critérios
+            "reasoning": ["string", "string", "string", "string"] // justificativa curta (max 10 palavras) para cada nota
+          }
+        ]
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { 
+                responseMimeType: "application/json" 
+            }
+        });
+
+        const jsonText = response.text;
+        if (jsonText) {
+            const parsedData = JSON.parse(jsonText);
+            // Calculate totals
+            const enrichedData: AIScoreData[] = parsedData.map((item: any) => ({
+                ...item,
+                totalScore: item.scores.reduce((a: number, b: number) => a + b, 0)
+            })).sort((a: AIScoreData, b: AIScoreData) => b.totalScore - a.totalScore);
+            
+            setAiScores(enrichedData);
+            setMessages(prev => [...prev, { role: 'model', text: 'Realizei a auditoria e pontuação das propostas baseado nas descrições técnicas. Veja a aba "Pontuação da IA".' }]);
+        }
+
+    } catch (error) {
+        console.error("Erro AI Scoring:", error);
+        setMessages(prev => [...prev, { role: 'model', text: 'Erro ao gerar pontuação automática. Tente novamente.' }]);
+    } finally {
+        setIsAnalyzing(false);
     }
   };
 
@@ -273,6 +327,101 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
     });
   };
 
+  // --- SUB-PANEL: AI SCORING RENDERER ---
+  const renderAIScoringPanel = () => {
+    if (!aiScores) {
+         return (
+            <div className="flex flex-col items-center justify-center h-80 text-center p-8 space-y-4">
+                <div className="bg-purple-100 dark:bg-purple-900/30 p-6 rounded-full">
+                    <Brain size={48} className="text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">Auditoria e Pontuação Automática</h3>
+                    <p className="text-slate-500 max-w-sm mx-auto mt-2">
+                        A IA vai ler as descrições de cada projeto e atribuir uma nota técnica (1-5) para cada critério, justificando a decisão.
+                    </p>
+                </div>
+                <button 
+                    onClick={handleAIScoring}
+                    disabled={isAnalyzing}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:shadow-purple-500/25 transition-all flex items-center gap-2"
+                >
+                    {isAnalyzing ? <Loader2 className="animate-spin" /> : <Calculator size={20} />}
+                    {isAnalyzing ? 'Analisando Propostas...' : 'Iniciar Auditoria IA'}
+                </button>
+            </div>
+         );
+    }
+
+    const aiWinner = aiScores[0];
+
+    return (
+        <div className="space-y-6 animate-fade-in p-2">
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 flex items-start gap-3">
+                <Bot className="text-purple-600 mt-1 shrink-0" size={24} />
+                <div>
+                    <h4 className="font-bold text-purple-900 dark:text-purple-100">Análise do Especialista Virtual</h4>
+                    <p className="text-sm text-purple-800 dark:text-purple-200 mt-1">
+                        Com base puramente nas descrições técnicas, o projeto <strong>{aiWinner.proposalName}</strong> obteve a maior pontuação ({aiWinner.totalScore}/20).
+                        Veja o detalhamento abaixo.
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid gap-6">
+                {aiScores.map((scoreData, idx) => (
+                    <div key={scoreData.proposalId} className={`bg-white dark:bg-slate-800 rounded-xl border-2 shadow-sm overflow-hidden ${idx === 0 ? 'border-emerald-400 dark:border-emerald-600 ring-2 ring-emerald-100 dark:ring-emerald-900/30' : 'border-slate-200 dark:border-slate-700'}`}>
+                        <div className="bg-slate-50 dark:bg-slate-900 p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                            <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                {idx === 0 && <span className="text-xl">🏆</span>}
+                                {scoreData.proposalName}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs uppercase text-slate-500">Nota Total IA</span>
+                                <span className={`text-xl font-black ${idx === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    {scoreData.totalScore}/20
+                                </span>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {CRITERIA.map((crit, cIdx) => (
+                                <div key={cIdx} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start border-b border-slate-100 dark:border-slate-700 last:border-0 pb-3 last:pb-0">
+                                    <div className="md:col-span-4">
+                                        <span className="text-xs font-bold text-slate-400 uppercase block mb-1">Critério {cIdx + 1}</span>
+                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-tight">{crit}</p>
+                                    </div>
+                                    <div className="md:col-span-8 flex flex-col gap-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex gap-1">
+                                                {[1,2,3,4,5].map(star => (
+                                                    <div key={star} className={`w-6 h-1 rounded-full ${star <= scoreData.scores[cIdx] ? (scoreData.scores[cIdx] >= 4 ? 'bg-emerald-500' : scoreData.scores[cIdx] >= 3 ? 'bg-amber-400' : 'bg-red-400') : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                                                ))}
+                                            </div>
+                                            <span className="font-bold text-sm text-slate-700 dark:text-slate-300">{scoreData.scores[cIdx]}/5</span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded">
+                                            "{scoreData.reasoning[cIdx]}"
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            
+            <div className="flex justify-center pt-4">
+                <button 
+                    onClick={handleAIScoring} 
+                    className="text-sm text-slate-500 hover:text-purple-600 flex items-center gap-2 transition-colors"
+                >
+                    <RefreshCw size={14} /> Refazer Auditoria
+                </button>
+            </div>
+        </div>
+    );
+  };
+
   const renderVisualReport = () => (
     <div ref={reportRef} className="space-y-8 p-6 bg-white dark:bg-slate-100 dark:text-slate-900 rounded-lg shadow-sm">
         {/* Header Report */}
@@ -361,35 +510,51 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
                 <Sparkles size={20} />
                 <h2 className="font-bold text-lg">Central de Análise</h2>
             </div>
-            <button 
-                onClick={handleDeepAnalysis}
-                disabled={isAnalyzing}
-                className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm border border-white/10"
-            >
-                {isAnalyzing ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
-                {isAnalyzing ? 'Gerando Análise...' : 'Gerar Nova Análise'}
-            </button>
+            <div className="flex gap-2">
+                <button 
+                    onClick={handleAIScoring}
+                    className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm border border-white/10"
+                    title="IA Avalia e Pontua os projetos"
+                >
+                    <Calculator size={14} /> IA: Pontuar
+                </button>
+                <button 
+                    onClick={handleDeepAnalysis}
+                    disabled={isAnalyzing}
+                    className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm border border-white/10"
+                    title="Gera relatório de texto"
+                >
+                    {isAnalyzing ? <Loader2 className="animate-spin" size={14} /> : <RefreshCw size={14} />}
+                    {isAnalyzing ? '...' : 'IA: Resumo'}
+                </button>
+            </div>
         </div>
 
         {/* Sub-Tabs */}
-        <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+        <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 overflow-x-auto">
             <button 
                 onClick={() => setActiveSubTab('visual')}
-                className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'visual' ? 'bg-white dark:bg-slate-800 border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-indigo-500'}`}
+                className={`flex-1 min-w-[100px] py-3 text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'visual' ? 'bg-white dark:bg-slate-800 border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-indigo-500'}`}
             >
-                <BarChart3 size={16} /> Relatório Visual
+                <BarChart3 size={14} /> Equipe
+            </button>
+            <button 
+                onClick={() => setActiveSubTab('ai-scoring')}
+                className={`flex-1 min-w-[100px] py-3 text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'ai-scoring' ? 'bg-white dark:bg-slate-800 border-b-2 border-purple-500 text-purple-600 dark:text-purple-400' : 'text-slate-500 hover:text-purple-500'}`}
+            >
+                <Brain size={14} /> Pontuação IA
             </button>
             <button 
                 onClick={() => setActiveSubTab('text')}
-                className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'text' ? 'bg-white dark:bg-slate-800 border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-indigo-500'}`}
+                className={`flex-1 min-w-[100px] py-3 text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'text' ? 'bg-white dark:bg-slate-800 border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-indigo-500'}`}
             >
-                <FileText size={16} /> Texto da IA
+                <FileText size={14} /> Texto IA
             </button>
             <button 
                 onClick={() => setActiveSubTab('export')}
-                className={`flex-1 py-3 text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'export' ? 'bg-white dark:bg-slate-800 border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-emerald-500'}`}
+                className={`flex-1 min-w-[100px] py-3 text-xs font-semibold flex items-center justify-center gap-2 transition-colors ${activeSubTab === 'export' ? 'bg-white dark:bg-slate-800 border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'text-slate-500 hover:text-emerald-500'}`}
             >
-                <Download size={16} /> Exportar Doc
+                <Download size={14} /> Exportar
             </button>
         </div>
         
@@ -399,6 +564,12 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
             {activeSubTab === 'visual' && (
                 <div className="p-4">
                      {renderVisualReport()}
+                </div>
+            )}
+
+            {activeSubTab === 'ai-scoring' && (
+                <div className="p-4">
+                     {renderAIScoringPanel()}
                 </div>
             )}
 
@@ -417,7 +588,7 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
                         <div className="flex flex-col items-center justify-center h-60 text-slate-400 text-center p-8">
                             <Sparkles size={48} className="mb-4 opacity-20" />
                             <p className="font-medium mb-2">Nenhuma análise gerada ainda.</p>
-                            <p className="text-xs max-w-xs">Clique no botão "Gerar Nova Análise" no topo para criar um relatório completo baseado nos votos atuais.</p>
+                            <p className="text-xs max-w-xs">Clique no botão "IA: Resumo" no topo.</p>
                         </div>
                     )}
                  </div>

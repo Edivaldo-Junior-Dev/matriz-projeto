@@ -21,3 +21,14 @@ export const CRITERIA = [
   "Compatibilidade com Sprints (Ágil)",
   "Potencial da Apresentação Final"
 ];
+
+// --- AUTH TYPES ---
+export type UserRole = 'admin' | 'member' | 'visitor';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+}

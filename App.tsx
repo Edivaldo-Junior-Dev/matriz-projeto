@@ -1,15 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { INITIAL_VOTES, MEMBERS as DEFAULT_MEMBERS, PROPOSALS as DEFAULT_PROPOSALS } from './constants';
-import { Score, VotesState, Member, Proposal } from './types';
+import { Score, VotesState, Member, Proposal, User } from './types';
 import VotingForm from './components/VotingForm';
 import ResultsMatrix from './components/ResultsMatrix';
 import ConfigPanel from './components/ConfigPanel';
 import AIChatPanel from './components/AIChatPanel';
+import GuidePanel from './components/GuidePanel';
+import LoginPanel from './components/LoginPanel'; // Import Login
 import { generateReportText } from './utils/formatReport';
-import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings, Sparkles } from 'lucide-react';
+import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings, Sparkles, BookOpen, LogOut, Shield } from 'lucide-react';
 
 const App: React.FC = () => {
-  // --- STATE ---
+  // --- AUTH STATE ---
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('matrix_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  // --- APP STATE ---
   
   // Votes
   const [votes, setVotes] = useState<VotesState>(() => {
@@ -24,16 +32,14 @@ const App: React.FC = () => {
   });
 
   // Config: Proposals
-  // UPDATED: Logic to migrate old data structures that might miss the 'link' property
   const [proposals, setProposals] = useState<Proposal[]>(() => {
     const saved = localStorage.getItem('matrix_proposals');
     if (saved) {
         try {
             const parsed = JSON.parse(saved);
-            // Migration: Ensure all loaded proposals have a link property
             return parsed.map((p: any) => ({
                 ...p,
-                link: p.link || '' // Default to empty string if missing
+                link: p.link || ''
             }));
         } catch (e) {
             return DEFAULT_PROPOSALS;
@@ -42,10 +48,11 @@ const App: React.FC = () => {
     return DEFAULT_PROPOSALS;
   });
 
-  const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'config' | 'ai'>('vote');
+  const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'config' | 'ai' | 'guide'>('vote');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [welcomeToast, setWelcomeToast] = useState(false); // Welcome message state
   
   // Dark mode
   const [darkMode, setDarkMode] = useState(() => {
@@ -57,6 +64,15 @@ const App: React.FC = () => {
   });
 
   // --- EFFECTS (Persistence) ---
+
+  // Auth Persistence
+  useEffect(() => {
+    if (currentUser) {
+        localStorage.setItem('matrix_user', JSON.stringify(currentUser));
+    } else {
+        localStorage.removeItem('matrix_user');
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     localStorage.setItem('matrix_votes', JSON.stringify(votes));
@@ -80,10 +96,41 @@ const App: React.FC = () => {
     }
   }, [darkMode]);
 
-  // --- HANDLERS ---
+  // --- AUTH HANDLERS ---
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    setWelcomeToast(true);
+    setTimeout(() => setWelcomeToast(false), 4000);
+    
+    // If Admin logs in, auto-select them if they exist in member list
+    if (user.role === 'admin') {
+        const adminMember = members.find(m => m.id === user.id); // Direct ID Match
+        if (adminMember) {
+            setSelectedMemberId(adminMember.id);
+        } else {
+             // Fallback: Try fuzzy name match if ID fails (for legacy data)
+            const fuzzyMember = members.find(m => m.name.toLowerCase().includes('edivaldo'));
+            if(fuzzyMember) setSelectedMemberId(fuzzyMember.id);
+        }
+    }
+  };
+
+  const handleLogout = () => {
+    if(window.confirm('Deseja realmente sair do sistema?')) {
+        setCurrentUser(null);
+        setActiveTab('vote');
+        setSelectedMemberId('');
+    }
+  };
+
+  // --- DATA HANDLERS ---
 
   const handleVote = (proposalId: string, criteriaIdx: number, score: Score) => {
     if (!selectedMemberId) return;
+
+    // SECURITY CHECK: Cannot vote if ReadOnly
+    const isReadOnly = currentUser?.role === 'visitor' || (currentUser?.id !== selectedMemberId);
+    if (isReadOnly) return;
 
     setVotes(prev => ({
       ...prev,
@@ -106,6 +153,10 @@ const App: React.FC = () => {
   };
 
   const resetData = () => {
+      if (currentUser?.role !== 'admin') {
+          alert("Apenas administradores podem resetar os dados.");
+          return;
+      }
       if(window.confirm("Isso apagará APENAS OS VOTOS. Os nomes dos projetos e membros serão mantidos. Continuar?")) {
           setVotes({});
           localStorage.removeItem('matrix_votes');
@@ -162,7 +213,6 @@ const App: React.FC = () => {
   const handleImportConfig = (data: any) => {
     if (data.members) setMembers(data.members);
     if (data.proposals) {
-        // Ensure imported proposals have the link field
         const cleanProposals = data.proposals.map((p: any) => ({
             ...p,
             link: p.link || ''
@@ -172,6 +222,10 @@ const App: React.FC = () => {
   };
 
   const handleResetConfig = () => {
+    if (currentUser?.role !== 'admin') {
+         alert("Ação não permitida. Apenas administradores podem resetar a configuração.");
+         return;
+    }
     if(window.confirm('Isso restaurará os nomes originais (E-Waste, etc) e APAGARÁ suas edições de texto. Confirmar?')) {
         setMembers(DEFAULT_MEMBERS);
         setProposals(DEFAULT_PROPOSALS);
@@ -179,8 +233,6 @@ const App: React.FC = () => {
   };
 
   const handleSaveAndReturn = () => {
-    // Logic is implied as state is already updated via handlers, 
-    // we just need to provide feedback and navigation
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
     setActiveTab('vote');
@@ -190,15 +242,35 @@ const App: React.FC = () => {
   const toggleTheme = () => setDarkMode(!darkMode);
 
   const activeMember = members.find(m => m.id === selectedMemberId);
+  const isReadOnly = currentUser?.role === 'visitor' || (currentUser?.id !== selectedMemberId);
+
+  // --- RENDER CONDITION: AUTH ---
+  if (!currentUser) {
+    return (
+        <div className={darkMode ? 'dark' : ''}>
+            <LoginPanel onLogin={handleLogin} />
+        </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       
-      {/* Toast Notification */}
+      {/* Toast Notification: Save */}
       <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] transition-all duration-300 ${showToast ? 'translate-y-0 opacity-100' : '-translate-y-16 opacity-0'}`}>
         <div className="bg-emerald-500 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 font-bold">
            <CheckCircle size={20} />
            Configuração Salva com Sucesso!
+        </div>
+      </div>
+
+      {/* Toast Notification: Welcome */}
+      <div className={`fixed top-4 right-4 z-[100] transition-all duration-500 ${welcomeToast ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+        <div className="bg-white dark:bg-slate-800 border-l-4 border-blue-500 text-slate-800 dark:text-white px-6 py-4 rounded shadow-xl flex items-center gap-4">
+           <div>
+             <h4 className="font-bold">Bem-vindo, {currentUser.name}!</h4>
+             <p className="text-xs text-slate-500">Sessão iniciada como {currentUser.role === 'admin' ? 'Administrador' : 'Visitante'}</p>
+           </div>
         </div>
       </div>
 
@@ -211,21 +283,28 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">Matriz de Análise</h1>
-              <p className="text-slate-500 text-xs font-medium">Ferramenta de Decisão Ágil</p>
+              <div className="flex items-center gap-2">
+                 <p className="text-slate-500 text-xs font-medium">Ferramenta de Decisão Ágil</p>
+                 {currentUser.role === 'visitor' && (
+                    <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Modo Visitante</span>
+                 )}
+              </div>
             </div>
           </div>
           
           <div className="flex gap-3 items-center">
-             <button 
-                onClick={handleCopyReport}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow-sm active:scale-95 flex items-center gap-2 ${
-                  copyFeedback 
-                    ? 'bg-emerald-500 text-white ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-900' 
-                    : 'bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600'
-                }`}
-             >
-               {copyFeedback ? 'Relatório Copiado!' : 'Copiar para Doc'}
-             </button>
+             {currentUser.role !== 'visitor' && (
+                <button 
+                    onClick={handleCopyReport}
+                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all shadow-sm active:scale-95 flex items-center gap-2 ${
+                    copyFeedback 
+                        ? 'bg-emerald-500 text-white ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-900' 
+                        : 'bg-slate-900 dark:bg-slate-700 text-white hover:bg-slate-800 dark:hover:bg-slate-600'
+                    }`}
+                >
+                {copyFeedback ? 'Relatório Copiado!' : 'Copiar para Doc'}
+                </button>
+             )}
              
              <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
@@ -236,6 +315,14 @@ const App: React.FC = () => {
              >
                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
              </button>
+
+             <button 
+               onClick={handleLogout}
+               className="p-2 rounded-full bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors ml-2"
+               title="Sair do Sistema"
+             >
+                <LogOut size={20} />
+             </button>
           </div>
         </div>
       </header>
@@ -243,7 +330,7 @@ const App: React.FC = () => {
       <main className="container mx-auto px-4 mt-8 flex-1 max-w-7xl">
         
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
           
           <button
             onClick={() => setActiveTab('vote')}
@@ -311,8 +398,8 @@ const App: React.FC = () => {
                 <Sparkles size={20} />
               </div>
               <div>
-                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Chat & Análise IA</h2>
-                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Consultor Virtual</p>
+                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Chat & IA</h2>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Consultor</p>
               </div>
             </div>
           </button>
@@ -336,7 +423,31 @@ const App: React.FC = () => {
               </div>
               <div>
                  <h2 className="text-base font-bold text-slate-900 dark:text-white">Configurar</h2>
-                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Editar Dados</p>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Dados</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('guide')}
+            className={`
+              relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2 col-span-2 md:col-span-1
+              hover:-translate-y-1 hover:shadow-xl
+              ${activeTab === 'guide' 
+                ? 'bg-white dark:bg-slate-800 border-slate-500 ring-4 ring-slate-500/10 shadow-lg' 
+                : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}
+            `}
+          >
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div className={`
+                w-10 h-10 rounded-lg flex items-center justify-center mb-2 transition-colors duration-300
+                ${activeTab === 'guide' ? 'bg-slate-600 text-white shadow-lg shadow-slate-600/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-slate-600 group-hover:text-white'}
+              `}>
+                <BookOpen size={20} />
+              </div>
+              <div>
+                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Manual</h2>
+                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Ajuda</p>
               </div>
             </div>
           </button>
@@ -344,14 +455,16 @@ const App: React.FC = () => {
         </div>
 
         {/* Reset Action (Subtle) */}
-        <div className="flex justify-end mb-6">
-           <button 
-             onClick={resetData} 
-             className="flex items-center gap-2 text-xs text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/10"
-           >
-             <Trash2 size={12} /> Limpar Todos os Votos
-           </button>
-        </div>
+        {currentUser.role === 'admin' && (
+            <div className="flex justify-end mb-6">
+            <button 
+                onClick={resetData} 
+                className="flex items-center gap-2 text-xs text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 transition-colors px-3 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/10"
+            >
+                <Trash2 size={12} /> Limpar Todos os Votos
+            </button>
+            </div>
+        )}
 
         {/* Content Area */}
         <div className="animate-fade-in">
@@ -359,7 +472,12 @@ const App: React.FC = () => {
             <div className="max-w-[1400px] mx-auto">
               {/* Member Selector */}
               <div className="mb-10 text-center">
-                <label className="block text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-wide mb-4">Quem está votando agora?</label>
+                <label className="block text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-wide mb-4">
+                    {isReadOnly && selectedMemberId && currentUser.role !== 'visitor'
+                        ? "Visualizando notas de:"
+                        : "Quem está votando agora?"
+                    }
+                </label>
                 <div className="flex flex-wrap justify-center gap-3">
                   {members.map(member => (
                     <button
@@ -373,8 +491,25 @@ const App: React.FC = () => {
                       `}
                     >
                       {member.name}
+                      {member.id === currentUser.id && (
+                        <span className="ml-2 text-[10px] bg-emerald-500 text-white px-1.5 rounded-full">Você</span>
+                      )}
                     </button>
                   ))}
+                  {/* Option for visitor to vote if they aren't in the list, though normally they should add themselves or just watch */}
+                  {currentUser.role === 'visitor' && !members.find(m => m.id === currentUser.id) && (
+                     <button
+                        onClick={() => {
+                            // Temporary Add visitor to member list visually so they can play around
+                            const visitorMember = { id: currentUser.id, name: currentUser.name };
+                            setMembers([...members, visitorMember]);
+                            setSelectedMemberId(visitorMember.id);
+                        }}
+                        className="px-6 py-2.5 rounded-full text-sm font-semibold border border-dashed border-slate-300 dark:border-slate-600 text-slate-500 hover:text-purple-500 hover:border-purple-500 transition-all"
+                     >
+                        + Votar como Visitante
+                     </button>
+                  )}
                 </div>
               </div>
 
@@ -384,6 +519,7 @@ const App: React.FC = () => {
                   votes={votes}
                   proposals={proposals} 
                   onVote={handleVote} 
+                  readOnly={isReadOnly}
                 />
               ) : (
                 <div className="text-center py-24 bg-white dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
@@ -419,6 +555,10 @@ const App: React.FC = () => {
               onReset={handleResetConfig}
               onSaveAndExit={handleSaveAndReturn}
             />
+          )}
+
+          {activeTab === 'guide' && (
+            <GuidePanel members={members} proposals={proposals} />
           )}
         </div>
       </main>
