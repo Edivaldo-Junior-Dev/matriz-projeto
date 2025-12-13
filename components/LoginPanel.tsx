@@ -8,14 +8,15 @@ interface LoginPanelProps {
 
 const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   const [view, setView] = useState<'login' | 'forgot' | 'visitor'>('login');
-  const [email, setEmail] = useState('');
+  // Inicializa o campo com o seu email para facilitar o acesso
+  const [email, setEmail] = useState('edivaldopererialimajunior@gmail.com');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Hardcoded credentials for demonstration
-  const ADMIN_EMAIL = 'edivaldojuniordev@gmail.com';
+  // CREDENCIAIS OFICIAIS
+  const ADMIN_EMAIL = 'edivaldopererialimajunior@gmail.com';
   const ADMIN_PASS = '19100801';
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -53,7 +54,8 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
 
   const handleForgotPassword = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Um link de redefinição foi enviado para ${email} (Simulação).`);
+    // Como não temos backend, simulamos o envio avisando o usuário
+    alert(`SIMULAÇÃO: A solicitação foi enviada para o email centralizador da equipe: ${ADMIN_EMAIL}. Verifique sua caixa de entrada.`);
     setView('login');
   };
 
@@ -118,7 +120,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                      placeholder="seu@email.com"
+                      placeholder="edivaldopererialimajunior@gmail.com"
                       required
                     />
                   </div>
@@ -247,7 +249,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                         type="submit" 
                         className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-lg shadow-lg hover:opacity-90 transition-opacity"
                     >
-                        Enviar Link de Recuperação
+                        Enviar Solicitação
                     </button>
                 </form>
 
