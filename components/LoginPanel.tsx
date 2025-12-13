@@ -9,11 +9,11 @@ interface LoginPanelProps {
 // Simulação de Banco de Dados de Usuários
 const REGISTERED_USERS = [
   { email: 'edivaldopererialimajunior@gmail.com', pass: '19100801', id: 'edivaldo', name: 'Edivaldo Junior', role: 'admin' as UserRole },
-  { email: 'cynthia@matrix.app', pass: '123456', id: 'cynthia', name: 'Cynthia Borelli', role: 'member' as UserRole },
-  { email: 'naiara@matrix.app', pass: '123456', id: 'naiara', name: 'Naiara Oliveira', role: 'member' as UserRole },
-  { email: 'emanuel@matrix.app', pass: '123456', id: 'emanuel', name: 'Emanuel Heráclio', role: 'member' as UserRole },
-  { email: 'fabiano@matrix.app', pass: '123456', id: 'fabiano', name: 'Fabiano Santana', role: 'member' as UserRole },
-  { email: 'gabriel@matrix.app', pass: '123456', id: 'gabriel', name: 'Gabriel Araujo', role: 'member' as UserRole },
+  { email: 'cynthia@matrix.app', pass: '19100801', id: 'cynthia', name: 'Cynthia Borelli', role: 'member' as UserRole },
+  { email: 'nayaraluprinda@hotmail.com', pass: '19100801', id: 'naiara', name: 'Naiara Oliveira', role: 'member' as UserRole },
+  { email: 'emanuelheraclio@gmail.com', pass: '19100801', id: 'emanuel', name: 'Emanuel Heráclio', role: 'member' as UserRole },
+  { email: 'bianosantos32@gmail.com', pass: '19100801', id: 'fabiano', name: 'Fabiano Santana', role: 'member' as UserRole },
+  { email: 'gabriel@matrix.app', pass: '19100801', id: 'gabriel', name: 'Gabriel Araujo', role: 'member' as UserRole },
 ];
 
 const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
@@ -132,7 +132,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                      placeholder="seu.nome@matrix.app"
+                      placeholder="seu.email@exemplo.com"
                       required
                     />
                   </div>
@@ -157,10 +157,6 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                  {/* Hint for demo purposes */}
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    * Membros: Use seu email @matrix.app e senha padrão <strong>123456</strong>
-                  </p>
                 </div>
 
                 {error && (
