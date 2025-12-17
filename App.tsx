@@ -337,18 +337,9 @@ const App: React.FC = () => {
         <div className="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-2">
-                 {/* Logo on Header - Small */}
-                 <img 
-                    src="/logo.png" 
-                    onError={(e) => {
-                        e.currentTarget.style.display = 'none'; 
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                    }}
-                    alt="Logo" 
-                    className="h-10 w-auto" 
-                 />
-                 <div className="hidden bg-accent/10 p-2 rounded-lg text-accent">
-                    <Layers size={24} />
+                 {/* Logo on Header - Replaced Image with Icon */}
+                 <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-2 rounded-lg shadow-md">
+                    <Layers size={24} strokeWidth={2.5} />
                  </div>
              </div>
             <div>
@@ -481,34 +472,36 @@ const App: React.FC = () => {
             </div>
           </button>
 
-          <button
-            onClick={() => setActiveTab('config')}
-            className={`
-              relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2
-              hover:-translate-y-1 hover:shadow-xl
-              ${activeTab === 'config' 
-                ? 'bg-white dark:bg-slate-800 border-purple-500 ring-4 ring-purple-500/10 shadow-lg' 
-                : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}
-            `}
-          >
-            <div className="relative z-10 flex flex-col h-full justify-between">
-              <div className={`
-                w-10 h-10 rounded-lg flex items-center justify-center mb-2 transition-colors duration-300
-                ${activeTab === 'config' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-purple-500 group-hover:text-white'}
-              `}>
-                <Settings size={20} />
-              </div>
-              <div>
-                 <h2 className="text-base font-bold text-slate-900 dark:text-white">Configurar</h2>
-                 <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Dados</p>
-              </div>
-            </div>
-          </button>
+          {currentUser.role !== 'visitor' && (
+            <button
+                onClick={() => setActiveTab('config')}
+                className={`
+                relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2
+                hover:-translate-y-1 hover:shadow-xl
+                ${activeTab === 'config' 
+                    ? 'bg-white dark:bg-slate-800 border-purple-500 ring-4 ring-purple-500/10 shadow-lg' 
+                    : 'bg-white dark:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm'}
+                `}
+            >
+                <div className="relative z-10 flex flex-col h-full justify-between">
+                <div className={`
+                    w-10 h-10 rounded-lg flex items-center justify-center mb-2 transition-colors duration-300
+                    ${activeTab === 'config' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-purple-500 group-hover:text-white'}
+                `}>
+                    <Settings size={20} />
+                </div>
+                <div>
+                    <h2 className="text-base font-bold text-slate-900 dark:text-white">Configurar</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Dados</p>
+                </div>
+                </div>
+            </button>
+          )}
 
           <button
             onClick={() => setActiveTab('guide')}
             className={`
-              relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2 col-span-2 md:col-span-1
+              relative group overflow-hidden rounded-2xl p-4 text-left transition-all duration-300 ease-out border-2 ${currentUser.role !== 'visitor' ? 'col-span-2 md:col-span-1' : ''}
               hover:-translate-y-1 hover:shadow-xl
               ${activeTab === 'guide' 
                 ? 'bg-white dark:bg-slate-800 border-slate-500 ring-4 ring-slate-500/10 shadow-lg' 

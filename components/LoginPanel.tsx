@@ -99,19 +99,9 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
           {/* Logo Section Centralized */}
           <div className="flex flex-col items-center justify-center flex-1">
               <div className="mb-6 relative group">
-                 {/* Logo Image - Centralized above text */}
-                 <img 
-                    src="/logo.png" 
-                    onError={(e) => {
-                        e.currentTarget.style.display = 'none'; // Hide if broken
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden'); // Show fallback
-                    }}
-                    alt="MatriZCognis Logo" 
-                    className="h-40 w-auto drop-shadow-2xl object-contain transition-transform duration-500 group-hover:scale-105" 
-                 />
-                 {/* Fallback Icon if Image Missing */}
-                 <div className="hidden bg-gradient-to-br from-blue-600 to-indigo-600 p-8 rounded-3xl text-white shadow-[0_0_40px_rgba(37,99,235,0.4)]">
-                     <Layers size={80} />
+                 {/* Logo Image Replaced with Icon Component */}
+                 <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-8 rounded-3xl text-white shadow-[0_0_40px_rgba(37,99,235,0.4)] transform hover:scale-105 transition-transform duration-500">
+                     <Layers size={80} strokeWidth={1.5} />
                  </div>
               </div>
               

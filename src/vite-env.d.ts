@@ -4,3 +4,8 @@ declare namespace NodeJS {
     [key: string]: string | undefined;
   }
 }
+
+declare module '*.png';
+declare module '*.jpg';
+declare module '*.jpeg';
+declare module '*.svg';
