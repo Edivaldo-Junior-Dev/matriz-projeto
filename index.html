@@ -38,16 +38,7 @@
         100% { background-position: 0% 50%; }
       }
       .cloud-bg {
-        background: linear-gradient(-45deg, #0f172a, #1e293b, #030712, #1e1b4b);
-        background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
-      }
-      .cloud-shape {
-        filter: blur(80px);
-        opacity: 0.15;
-        border-radius: 50%;
-        position: fixed;
-        pointer-events: none;
+        background: #0f172a; /* Cor sólida e estável */
       }
     </style>
 <script type="importmap">
@@ -66,10 +57,8 @@
 }
 </script>
 </head>
-  <body class="cloud-bg text-slate-900 antialiased dark:text-slate-100 transition-colors duration-200 min-h-screen">
-    <div class="cloud-shape bg-blue-500 w-[500px] h-[300px] top-[-100px] left-[-100px] animate-pulse-slow"></div>
-    <div class="cloud-shape bg-orange-500 w-[400px] h-[400px] bottom-[-100px] right-[-100px] animate-pulse-slow" style="animation-delay: 2s;"></div>
-    <div id="root"></div>
+  <body class="cloud-bg text-slate-900 antialiased dark:text-slate-100 transition-colors duration-200 min-h-screen relative overflow-x-hidden">
+    <div id="root" class="relative z-10"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>

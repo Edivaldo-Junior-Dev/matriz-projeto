@@ -1,8 +1,7 @@
 
 import React, { useState } from 'react';
 import { Team, User } from '../types';
-// Fixed missing BarChart3 import
-import { Edit3, Users, Cloud, ExternalLink, Play, Check, ChevronRight, Briefcase, BarChart3 } from 'lucide-react';
+import { Edit3, Users, Briefcase, BarChart3, Check } from 'lucide-react';
 
 interface TeamDashboardProps {
   teams: Team[];
@@ -90,17 +89,10 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onE
             <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 flex gap-2">
                <button 
                   onClick={() => onEnterMatrix(team)}
-                  className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all"
+                  className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg"
                 >
-                 <BarChart3 size={14} /> MATRIZ COGNIS
+                 <BarChart3 size={16} /> MATRIZ COGNIS
                </button>
-               <a 
-                 href={team.project.link} 
-                 target="_blank" 
-                 className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-600 dark:text-slate-400 hover:text-orange-500 transition-colors"
-                >
-                 <ExternalLink size={18} />
-               </a>
             </div>
 
             {/* Glow Effect on Hover */}
@@ -137,8 +129,8 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onE
                     <input value={editForm.members.join(', ')} onChange={e => setEditForm({...editForm, members: e.target.value.split(',').map(s => s.trim())})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm" />
                  </div>
                  <div className="space-y-1">
-                    <label className="text-xs font-black uppercase text-slate-400">Link do Portfólio/MVP</label>
-                    <input value={editForm.project.link} onChange={e => setEditForm({...editForm, project: {...editForm.project, link: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm" />
+                    <label className="text-xs font-black uppercase text-slate-400">Link do Portfólio/MVP (Para uso futuro)</label>
+                    <input value={editForm.project.link} onChange={e => setEditForm({...editForm, project: {...editForm.project, link: e.target.value}})} placeholder="Opcional: Adicione um link se desejar" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm" />
                  </div>
               </div>
               <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">

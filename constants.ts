@@ -1,6 +1,6 @@
-import { Member, Proposal, VotesState } from './types';
 
-// IDs fixos da equipe oficial para cálculos de média e relatórios
+import { Member, Proposal, VotesState, Team } from './types';
+
 export const CORE_TEAM_IDS = ['edivaldo', 'cynthia', 'naiara', 'emanuel', 'fabiano', 'gabriel'];
 
 export const MEMBERS: Member[] = [
@@ -59,12 +59,53 @@ export const PROPOSALS: Proposal[] = [
   }
 ];
 
-// Pre-filling Edivaldo's scores based on the prompt example
-export const INITIAL_VOTES: VotesState = {
-  edivaldo: {
-    ewaste: { 0: 3, 1: 2, 2: 3, 3: 4 },
-    profilink: { 0: 2, 1: 1, 2: 1, 3: 2 },
-    portfolio: { 0: 5, 1: 5, 2: 5, 3: 5 },
-    motos: { 0: 4, 1: 2, 2: 3, 3: 4 }
+export const TEAMS: Team[] = [
+  {
+    id: 'team_1',
+    teamNumber: 1,
+    name: 'Equipe Cloud 1',
+    members: [],
+    project: { name: 'Aguardando Definição', description: 'Nenhum projeto registrado.', link: '' }
+  },
+  {
+    id: 'team_2',
+    teamNumber: 2,
+    name: 'Equipe Cloud 2',
+    members: [],
+    project: { name: 'Aguardando Definição', description: 'Nenhum projeto registrado.', link: '' }
+  },
+  {
+    id: 'team_3',
+    teamNumber: 3,
+    name: 'Equipe Cloud 3',
+    members: ['Edivaldo Junior', 'Cynthia Borelli', 'Naiara Oliveira', 'Emanuel Heráclio', 'Fabiano Santana', 'Gabriel Araujo'],
+    project: {
+      name: 'Matriz Cognis Cloud',
+      description: 'Sistema avançado de análise comparativa e auditoria de projetos.',
+      link: ''
+    }
+  },
+  {
+    id: 'team_4',
+    teamNumber: 4,
+    name: 'Equipe Cloud 4',
+    members: [],
+    project: { name: 'Aguardando Definição', description: 'Nenhum projeto registrado.', link: '' }
+  },
+  {
+    id: 'team_5',
+    teamNumber: 5,
+    name: 'Equipe Cloud 5',
+    members: [],
+    project: { name: 'Aguardando Definição', description: 'Nenhum projeto registrado.', link: '' }
+  },
+  {
+    id: 'team_6',
+    teamNumber: 6,
+    name: 'Equipe Cloud 6',
+    members: [],
+    project: { name: 'Aguardando Definição', description: 'Nenhum projeto registrado.', link: '' }
   }
-};
+];
+
+export const INITIAL_VOTES: VotesState = {};
