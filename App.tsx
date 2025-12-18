@@ -8,7 +8,7 @@ import ResultsMatrix from './components/ResultsMatrix';
 import AIChatPanel from './components/AIChatPanel';
 import LoginPanel from './components/LoginPanel';
 import TeamDashboard from './components/TeamDashboard';
-import { Moon, Sun, BarChart3, LogOut, Layers, ChevronLeft, CloudUpload, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { Moon, Sun, BarChart3, LogOut, Layers, ChevronLeft, CloudUpload, AlertCircle, CheckCircle, RefreshCw, Cloud } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -101,8 +101,6 @@ const App: React.FC = () => {
     const memberId = CORE_TEAM_IDS.find(id => currentUser.name.toLowerCase().includes(id)) || 'visitor';
 
     try {
-      // Lógica manual para evitar erro de unique constraint:
-      // 1. Tenta encontrar se o registro já existe
       const { data: existing } = await supabase
         .from('votes')
         .select('voter_id')
@@ -113,7 +111,6 @@ const App: React.FC = () => {
 
       let error;
       if (existing) {
-        // 2. Se existe, atualiza
         const { error: updateError } = await supabase
           .from('votes')
           .update({ score })
@@ -122,7 +119,6 @@ const App: React.FC = () => {
           .eq('criterion_index', cidx);
         error = updateError;
       } else {
-        // 3. Se não existe, insere
         const { error: insertError } = await supabase
           .from('votes')
           .insert({ voter_id: memberId, proposal_id: pid, criterion_index: cidx, score });
@@ -144,7 +140,7 @@ const App: React.FC = () => {
   if (!currentUser) return <LoginPanel onLogin={(u) => setCurrentUser(u)} />;
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent transition-colors duration-200 relative z-10">
+    <div className="min-h-screen flex flex-col bg-transparent transition-colors duration-200 relative z-10 font-sans">
       <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 transition-all">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -155,7 +151,10 @@ const App: React.FC = () => {
             )}
             <div className="bg-orange-500 text-white p-2 rounded-lg shadow-lg shadow-orange-500/20"><Layers size={20} /></div>
             <div>
-              <h1 className="text-xl font-bold dark:text-white leading-none">Portfólio <span className="text-orange-500">Cloud Dev</span></h1>
+              <h1 className="text-xl font-black dark:text-white leading-none tracking-tighter flex items-center gap-2">
+                portfolioclouddev<span className="text-orange-500">.com.br</span>
+                <Cloud size={14} className="text-orange-400 hidden sm:block animate-pulse" />
+              </h1>
               <p className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-wider flex items-center gap-2">
                 {syncStatus === 'online' ? <span className="text-emerald-500">● ONLINE</span> : <span className="text-red-500">● {syncStatus.toUpperCase()}</span>}
                 {errorMessage && <span className="text-red-400 border-l border-slate-300 dark:border-slate-700 pl-2 max-w-[200px] truncate" title={errorMessage}>{errorMessage}</span>}
@@ -241,7 +240,7 @@ const App: React.FC = () => {
       </main>
       
       <footer className="py-8 text-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.4em] opacity-30">
-        Cloud Dev Auditoria • Sincronizado via Supabase
+        portfolioclouddev.com.br • Sincronizado via Supabase
       </footer>
     </div>
   );

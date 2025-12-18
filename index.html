@@ -4,14 +4,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MatrizCognis | Análise Comparativa</title>
+    <title>portfolioclouddev.com.br | Auditoria de Projetos</title>
     <meta name="description" content="Ferramenta de análise técnica e auditoria de projetos baseada em critérios ágeis." />
+    <!-- Fonte Montserrat para um visual moderno e limpo -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Montserrat', 'sans-serif'],
+            },
             colors: {
               primary: '#0f172a',
               secondary: '#334155',
@@ -20,6 +25,7 @@
             animation: {
               'pulse-slow': 'pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
               'float': 'float 6s ease-in-out infinite',
+              'spin-slow': 'spin 12s linear infinite',
             },
             keyframes: {
               float: {
@@ -32,13 +38,30 @@
       }
     </script>
     <style>
+      body {
+        font-family: 'Montserrat', sans-serif;
+      }
       @keyframes gradient {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
       }
       .cloud-bg {
-        background: #0f172a; /* Cor sólida e estável */
+        background: #0f172a; 
+      }
+      /* Custom scrollbar para manter a estética */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #1e293b;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #334155;
       }
     </style>
 <script type="importmap">

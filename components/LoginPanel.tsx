@@ -10,10 +10,7 @@ import {
   Check,
   Sparkles,
   School,
-  Users,
   LayoutDashboard,
-  Globe,
-  // Added missing Layers import
   Layers
 } from 'lucide-react';
 
@@ -68,27 +65,62 @@ interface LoginPanelProps {
 
 const CAROUSEL_STEPS = [
   {
-    title: "Seu Portfólio na Nuvem",
-    description: "Centralize seus projetos, avaliações técnicas e resultados de auditoria em um ambiente profissional e escalável.",
-    icon: <Cloud className="w-12 h-12 text-emerald-400" />,
+    title: "Sites Personalizados",
+    description: "Um dos principais serviços que oferecemos aos nossos clientes. Aqui estão algumas vantagens de ter um site personalizado.",
+    icon: <GlobeAnim />,
+    color: "from-slate-900 to-blue-900/60",
+    accent: "blue"
+  },
+  {
+    title: "01 | Autenticação",
+    description: "Sistema de autenticação fácil para garantir segurança e praticidade no acesso dos usuários.",
+    icon: <UserCheck className="w-12 h-12 text-emerald-400" />,
     color: "from-slate-900 to-emerald-900/60",
     accent: "emerald"
   },
   {
-    title: "Gestão e Governança",
-    description: "Identifique-se com sua turma e nome para organizar todo o seu portfólio de desenvolvimento de forma segura.",
-    icon: <LayoutDashboard className="w-12 h-12 text-blue-400" />,
+    title: "02 | API Limpa",
+    description: "Uma API limpa e leve para máxima performance e facilidade de integração entre sistemas.",
+    icon: <Layers className="w-12 h-12 text-blue-400" />,
     color: "from-blue-600/30 to-indigo-900/60",
     accent: "blue"
   },
   {
-    title: "Inteligência de Análise",
-    description: "Aproveite o módulo MatrizCognis para auditorias imparciais assistidas por Inteligência Artificial.",
-    icon: <Sparkles className="w-12 h-12 text-purple-400" />,
+    title: "03 | Performance",
+    description: "Tempo de carregamento rápido. Otimização extrema para a melhor experiência do usuário.",
+    icon: <Sparkles className="w-12 h-12 text-amber-400" />,
+    color: "from-amber-600/30 to-slate-900/70",
+    accent: "amber"
+  },
+  {
+    title: "04 | Segurança",
+    description: "Estrutura segura. Implementação das melhores práticas de defesa contra vulnerabilidades.",
+    icon: <LayoutDashboard className="w-12 h-12 text-purple-400" />,
     color: "from-purple-600/30 to-indigo-950/70",
     accent: "purple"
+  },
+  {
+    title: "05 | Complexidade",
+    description: "Implementação das soluções mais complexas com arquitetura de nuvem escalável.",
+    icon: <Cloud className="w-12 h-12 text-indigo-400" />,
+    color: "from-indigo-600/30 to-slate-900/70",
+    accent: "indigo"
   }
 ];
+
+function GlobeAnim() {
+  return (
+    <div className="relative">
+      <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
+      <div className="relative border-4 border-blue-400/30 rounded-full p-8 animate-spin-slow">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-blue-400 rounded-full shadow-[0_0_15px_rgba(96,165,250,0.8)]"></div>
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <LayoutDashboard className="w-12 h-12 text-blue-400" />
+      </div>
+    </div>
+  );
+}
 
 const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -117,7 +149,7 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
     if (descDone) {
       const nextSlideTimer = setTimeout(() => {
         setCurrentSlide(prev => (prev + 1) % CAROUSEL_STEPS.length);
-      }, 5000);
+      }, 4000);
       return () => clearTimeout(nextSlideTimer);
     }
   }, [descDone]);
@@ -152,12 +184,11 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-transparent">
       <div className={`fixed inset-0 transition-colors duration-[3000ms] opacity-20 pointer-events-none bg-${activeSlide.accent}-950`}></div>
 
-      <div className="bg-slate-950/70 backdrop-blur-3xl border border-white/10 w-full max-w-5xl h-[700px] rounded-[56px] shadow-[0_48px_128px_-16px_rgba(0,0,0,1)] flex overflow-hidden z-10 ring-1 ring-white/10 animate-fade-in">
+      <div className="bg-slate-950/70 backdrop-blur-3xl border border-white/10 w-full max-w-5xl h-[720px] rounded-[56px] shadow-[0_48px_128px_-16px_rgba(0,0,0,1)] flex overflow-hidden z-10 ring-1 ring-white/10 animate-fade-in">
         
         <div className={`hidden md:flex flex-col w-1/2 p-12 relative z-10 transition-all duration-[2000ms] bg-gradient-to-br ${activeSlide.color} border-r border-white/5`}>
           <div className="flex-1 flex flex-col justify-center items-center text-center space-y-12">
             <div className="relative">
-                <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full scale-150 animate-pulse-slow"></div>
                 <div className="relative bg-slate-900/60 backdrop-blur-2xl p-12 rounded-[48px] border border-white/20 shadow-2xl animate-float">
                    {activeSlide.icon}
                 </div>
@@ -174,9 +205,9 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
               </div>
             </div>
 
-            <div className="flex gap-2.5">
+            <div className="flex gap-2">
                 {CAROUSEL_STEPS.map((_, i) => (
-                    <div key={i} className={`h-1.5 rounded-full transition-all duration-700 ${i === currentSlide ? 'w-10 bg-white' : 'w-2.5 bg-white/20'}`}></div>
+                    <div key={i} className={`h-1 rounded-full transition-all duration-700 ${i === currentSlide ? 'w-8 bg-white' : 'w-2 bg-white/20'}`}></div>
                 ))}
             </div>
           </div>
@@ -192,13 +223,16 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
             </div>
             <div className="flex flex-col items-end text-right">
               <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Engenharia de Software:</p>
-              <div className="flex items-center gap-3">
-                <a href="https://www.linkedin.com/in/edivaldojuniordev/" target="_blank" className="text-white hover:text-orange-500 font-black text-xs transition-all uppercase tracking-tighter">
-                  Edivaldo Junior
-                </a>
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors">
-                  <Linkedin size={14} />
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-3">
+                  <a href="https://www.linkedin.com/in/edivaldojuniordev/" target="_blank" className="text-white hover:text-orange-500 font-black text-xs transition-all uppercase tracking-tighter">
+                    Edivaldo Junior
+                  </a>
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors">
+                    <Linkedin size={14} />
+                  </div>
                 </div>
+                <span className="text-[8px] text-white/20 mt-1 uppercase font-bold tracking-widest bg-white/5 px-2 py-0.5 rounded-full">v2.4.12 - STABLE BUILD</span>
               </div>
             </div>
           </div>
@@ -210,7 +244,13 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
                <div className="bg-gradient-to-br from-orange-400 to-orange-600 p-3 rounded-2xl text-white shadow-[0_0_30px_rgba(249,115,22,0.3)]">
                   <Layers size={24} />
                </div>
-               <span className="text-orange-500 text-[11px] font-black uppercase tracking-[0.5em]">Ambiente de Auditoria</span>
+               <div className="flex items-center gap-2">
+                 <span className="text-orange-500 text-[11px] font-black uppercase tracking-[0.4em]">portfolioclouddev.com.br</span>
+                 <div className="relative">
+                   <Cloud className="text-orange-400/50 absolute animate-pulse" size={14} />
+                   <Cloud className="text-orange-500 relative" size={14} />
+                 </div>
+               </div>
             </div>
             <h2 className="text-6xl font-black text-white tracking-tighter leading-[0.9] mb-4">Acesso ao <br/><span className="text-orange-500 italic">Portfólio</span></h2>
             <div className="w-12 h-1.5 bg-orange-500 rounded-full mb-6"></div>
