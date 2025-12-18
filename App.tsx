@@ -2,15 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { INITIAL_VOTES, MEMBERS as DEFAULT_MEMBERS, PROPOSALS as DEFAULT_PROPOSALS, CORE_TEAM_IDS } from './constants';
 import { Score, VotesState, Member, Proposal, User, Team } from './types';
+import { supabase } from './lib/supabase';
 import VotingForm from './components/VotingForm';
 import ResultsMatrix from './components/ResultsMatrix';
-import ConfigPanel from './components/ConfigPanel';
 import AIChatPanel from './components/AIChatPanel';
-import GuidePanel from './components/GuidePanel';
 import LoginPanel from './components/LoginPanel';
 import TeamDashboard from './components/TeamDashboard';
-import { generateReportText } from './utils/formatReport';
-import { Moon, Sun, UserCheck, BarChart3, Trash2, CheckCircle, Settings, Sparkles, BookOpen, LogOut, Cloud, Layers, ChevronLeft } from 'lucide-react';
+import { Moon, Sun, BarChart3, LogOut, Layers, ChevronLeft, Globe } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -19,56 +17,45 @@ const App: React.FC = () => {
   });
 
   const [view, setView] = useState<'dashboard' | 'matrix'>('dashboard');
-  const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'config' | 'ai' | 'guide'>('vote');
+  const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'ai'>('vote');
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-
-  const [votes, setVotes] = useState<VotesState>(() => {
-    const saved = localStorage.getItem('matrix_votes');
-    return saved ? JSON.parse(saved) : INITIAL_VOTES;
-  });
-
-  const [members, setMembers] = useState<Member[]>(() => {
-    const saved = localStorage.getItem('matrix_members');
-    return saved ? JSON.parse(saved) : DEFAULT_MEMBERS;
-  });
-
-  const [proposals, setProposals] = useState<Proposal[]>(() => {
-    const saved = localStorage.getItem('matrix_proposals');
-    return saved ? JSON.parse(saved) : DEFAULT_PROPOSALS;
-  });
-
-  const [teams, setTeams] = useState<Team[]>(() => {
-    const saved = localStorage.getItem('matrix_teams');
-    if (saved) return JSON.parse(saved);
-    
-    // Default Teams
-    return Array.from({ length: 6 }, (_, i) => ({
-      id: `team_${i + 1}`,
-      teamNumber: i + 1,
-      name: i + 1 === 3 ? "Equipe 3 - Matriz Master" : `Equipe ${i + 1}`,
-      members: i + 1 === 3 
-        ? ['Edivaldo Junior', 'Cynthia Borelli', 'Naiara Oliveira', 'Emanuel Heráclio', 'Fabiano Santana', 'Gabriel Araujo']
-        : [`Integrante 1 - E${i+1}`, `Integrante 2 - E${i+1}`],
-      project: {
-        name: i + 1 === 3 ? "MatrizCognis" : `Projeto Equipe ${i + 1}`,
-        description: i + 1 === 3 ? "Sistema avançado de análise comparativa e auditoria de projetos." : "Descrição do projeto da equipe em nuvem.",
-        link: "https://exemplo.com"
-      }
-    }));
-  });
-
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
-  const [lastSaved, setLastSaved] = useState<Date>(new Date());
+  const [votes, setVotes] = useState<VotesState>(INITIAL_VOTES);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
 
   useEffect(() => {
-    localStorage.setItem('matrix_votes', JSON.stringify(votes));
-    localStorage.setItem('matrix_members', JSON.stringify(members));
-    localStorage.setItem('matrix_proposals', JSON.stringify(proposals));
-    localStorage.setItem('matrix_teams', JSON.stringify(teams));
+    const fetchVotes = async () => {
+      const { data, error } = await supabase
+        .from('votes')
+        .select('*');
+      
+      if (data && !error) {
+        const newState: VotesState = { ...INITIAL_VOTES };
+        data.forEach(v => {
+          if (!newState[v.voter_id]) newState[v.voter_id] = {};
+          if (!newState[v.voter_id][v.proposal_id]) newState[v.voter_id][v.proposal_id] = {};
+          newState[v.voter_id][v.proposal_id][v.criterion_index] = v.score;
+        });
+        setVotes(newState);
+      }
+    };
+
+    fetchVotes();
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, (payload) => {
+        fetchVotes();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem('matrix_user', JSON.stringify(currentUser));
-    setLastSaved(new Date());
-  }, [votes, members, proposals, teams, currentUser]);
+  }, [currentUser]);
 
   useEffect(() => {
     if (darkMode) {
@@ -80,19 +67,25 @@ const App: React.FC = () => {
     }
   }, [darkMode]);
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    setView('dashboard');
+  const handleVote = async (pid: string, cidx: number, score: Score) => {
+    if (!currentUser) return;
+    const memberId = CORE_TEAM_IDS.find(id => currentUser.name.toLowerCase().includes(id)) || 'visitor';
+
+    const { error } = await supabase
+      .from('votes')
+      .upsert({ 
+        voter_id: memberId, 
+        proposal_id: pid, 
+        criterion_index: cidx, 
+        score: score 
+      }, { onConflict: 'voter_id,proposal_id,criterion_index' });
+
+    if (error) {
+      console.error("Erro ao votar:", error);
+    }
   };
 
-  const handleEnterMatrix = (team: Team) => {
-    setSelectedTeam(team);
-    setView('matrix');
-    const memberMatch = members.find(m => m.name.toLowerCase().includes(currentUser?.name.split(' ')[0].toLowerCase() || ''));
-    if(memberMatch) setSelectedMemberId(memberMatch.id);
-  };
-
-  if (!currentUser) return <LoginPanel onLogin={handleLogin} />;
+  if (!currentUser) return <LoginPanel onLogin={(u) => setCurrentUser(u)} />;
 
   return (
     <div className="min-h-screen flex flex-col bg-transparent transition-colors duration-200 relative z-10">
@@ -106,16 +99,12 @@ const App: React.FC = () => {
             )}
             <div className="bg-orange-500 text-white p-2 rounded-lg shadow-lg shadow-orange-500/20"><Layers size={20} /></div>
             <div>
-              <h1 className="text-xl font-bold dark:text-white">Portfólio <span className="text-orange-500">Cloud Dev</span></h1>
-              <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">{currentUser.turmaName}</p>
+              <h1 className="text-xl font-bold dark:text-white leading-none">Portfólio <span className="text-orange-500">Cloud Dev</span></h1>
+              <p className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-wider">Matriz de Análise Comparativa</p>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex flex-col items-end border-r border-slate-200 dark:border-slate-800 pr-4">
-              <span className="text-[10px] font-black uppercase text-slate-400">Logado como</span>
-              <span className="text-sm font-bold text-slate-700 dark:text-white">{currentUser.name}</span>
-            </div>
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-slate-500 hover:text-orange-500 transition-colors bg-slate-100 dark:bg-slate-800 rounded-xl">
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -129,9 +118,9 @@ const App: React.FC = () => {
       <main className="container mx-auto px-4 py-8 flex-1">
         {view === 'dashboard' ? (
           <TeamDashboard 
-            teams={teams} 
-            onUpdateTeams={setTeams} 
-            onEnterMatrix={handleEnterMatrix}
+            teams={[]} 
+            onUpdateTeams={() => {}} 
+            onEnterMatrix={(t) => { setSelectedTeam(t); setView('matrix'); }}
             currentUser={currentUser}
           />
         ) : (
@@ -142,47 +131,33 @@ const App: React.FC = () => {
                      <BarChart3 size={24} />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black dark:text-white">Módulo Matriz Cognis</h2>
-                    <p className="text-slate-500 text-sm font-medium">Equipe em análise: <span className="text-orange-500">{selectedTeam?.name}</span></p>
+                    <h2 className="text-2xl font-black dark:text-white">Matriz Cognis Cloud</h2>
+                    <p className="text-slate-500 text-sm">Auditoria Técnica em Tempo Real</p>
                   </div>
                </div>
-               <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl self-stretch md:self-auto overflow-x-auto">
-                  <button onClick={() => setActiveTab('vote')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab === 'vote' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>VOTAÇÃO</button>
-                  <button onClick={() => setActiveTab('results')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab === 'results' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-md' : 'text-slate-500 hover:text-slate-700'}`}>MATRIZ</button>
-                  <button onClick={() => setActiveTab('ai')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all whitespace-nowrap ${activeTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-700'}`}>IA CONSULTOR</button>
+               <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
+                  <button onClick={() => setActiveTab('vote')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'vote' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-md' : 'text-slate-500'}`}>VOTAÇÃO</button>
+                  <button onClick={() => setActiveTab('results')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'results' ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-md' : 'text-slate-500'}`}>MATRIZ</button>
+                  <button onClick={() => setActiveTab('ai')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}>IA CONSULTOR</button>
                </div>
             </div>
 
             {activeTab === 'vote' && (
-              <div className="space-y-8">
-                <div className="flex flex-wrap justify-center gap-2 bg-white/30 dark:bg-slate-900/30 backdrop-blur-md p-4 rounded-3xl">
-                  {members.map(m => (
-                    <button key={m.id} onClick={() => setSelectedMemberId(m.id)} className={`px-5 py-2.5 rounded-2xl text-[10px] font-black tracking-widest border transition-all ${selectedMemberId === m.id ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 scale-105 shadow-xl border-transparent' : 'bg-white/50 dark:bg-slate-800/50 text-slate-500 border-white/20 dark:border-slate-700 hover:bg-white'}`}>
-                      {m.name.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-                {selectedMemberId && (
-                  <VotingForm 
-                    member={members.find(m => m.id === selectedMemberId)!} 
-                    votes={votes} proposals={proposals} 
-                    onVote={(pid, cidx, score) => {
-                      if(currentUser.role !== 'admin' && currentUser.teamNumber !== 3) return;
-                      setVotes(prev => ({...prev, [selectedMemberId]: {...prev[selectedMemberId], [pid]: {...prev[selectedMemberId]?.[pid], [cidx]: score}}}));
-                    }}
-                    readOnly={currentUser.teamNumber !== 3 && currentUser.role !== 'admin'}
-                  />
-                )}
-              </div>
+              <VotingForm 
+                member={DEFAULT_MEMBERS[0]}
+                votes={votes} 
+                proposals={DEFAULT_PROPOSALS} 
+                onVote={handleVote}
+              />
             )}
-            {activeTab === 'results' && <ResultsMatrix votes={votes} members={members} proposals={proposals} />}
-            {activeTab === 'ai' && <AIChatPanel votes={votes} members={members} proposals={proposals} />}
+            {activeTab === 'results' && <ResultsMatrix votes={votes} members={DEFAULT_MEMBERS} proposals={DEFAULT_PROPOSALS} />}
+            {activeTab === 'ai' && <AIChatPanel votes={votes} members={DEFAULT_MEMBERS} proposals={DEFAULT_PROPOSALS} />}
           </div>
         )}
       </main>
       
-      <footer className="py-8 border-t border-slate-200/50 dark:border-slate-800/50 text-center bg-white/10 backdrop-blur-sm">
-         <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Escola da Nuvem • Portfólio Cloud Dev 2025</p>
+      <footer className="py-8 text-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.4em] opacity-30">
+        Desenvolvimento Cloud & Auditoria Técnica
       </footer>
     </div>
   );

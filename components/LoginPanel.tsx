@@ -1,24 +1,22 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { User, UserRole, Turma } from '../types';
+import { User, Turma } from '../types';
 import { 
   ArrowRight, 
   UserCheck, 
   Linkedin, 
-  Layers, 
   Cloud, 
   Edit3, 
-  Plus, 
   Check,
-  BarChart3,
   Sparkles,
   School,
-  Globe,
   Users,
-  LayoutDashboard
+  LayoutDashboard,
+  Globe,
+  // Added missing Layers import
+  Layers
 } from 'lucide-react';
 
-// Componente de digitação de alta precisão
 const TypewriterText: React.FC<{ 
   text: string, 
   speed?: number, 
@@ -30,7 +28,6 @@ const TypewriterText: React.FC<{
   const [index, setIndex] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset total quando o texto ou status ativo mudar
   useEffect(() => {
     setDisplayedText('');
     setIndex(0);
@@ -39,8 +36,6 @@ const TypewriterText: React.FC<{
 
   useEffect(() => {
     if (!active) return;
-
-    // Atraso inicial antes de começar a digitar
     if (index === 0 && delay > 0) {
       const initialDelay = setTimeout(() => {
         setIndex(1);
@@ -48,7 +43,6 @@ const TypewriterText: React.FC<{
       return () => clearTimeout(initialDelay);
     }
 
-    // Lógica de digitação letra por letra
     if (index >= 0 && index < text.length) {
       timerRef.current = setTimeout(() => {
         setDisplayedText(text.substring(0, index + 1));
@@ -57,9 +51,7 @@ const TypewriterText: React.FC<{
       return () => {
         if (timerRef.current) clearTimeout(timerRef.current);
       };
-    } 
-    // Finalização da frase
-    else if (index >= text.length && text.length > 0) {
+    } else if (index >= text.length && text.length > 0) {
       if (onComplete) {
         const finalizeTimer = setTimeout(onComplete, 300);
         return () => clearTimeout(finalizeTimer);
@@ -76,22 +68,22 @@ interface LoginPanelProps {
 
 const CAROUSEL_STEPS = [
   {
-    title: "Sua Jornada na Nuvem",
-    description: "Identifique-se com sua turma e nome para centralizar e organizar todo o seu portfólio de desenvolvimento cloud em um único lugar seguro e profissional.",
+    title: "Seu Portfólio na Nuvem",
+    description: "Centralize seus projetos, avaliações técnicas e resultados de auditoria em um ambiente profissional e escalável.",
+    icon: <Cloud className="w-12 h-12 text-emerald-400" />,
+    color: "from-slate-900 to-emerald-900/60",
+    accent: "emerald"
+  },
+  {
+    title: "Gestão e Governança",
+    description: "Identifique-se com sua turma e nome para organizar todo o seu portfólio de desenvolvimento de forma segura.",
     icon: <LayoutDashboard className="w-12 h-12 text-blue-400" />,
     color: "from-blue-600/30 to-indigo-900/60",
     accent: "blue"
   },
   {
-    title: "Hub de Colaboração",
-    description: "Publique seu projeto e visualize as entregas de todas as equipes da sua turma. O conhecimento compartilhado acelera a evolução técnica do grupo.",
-    icon: <Users className="w-12 h-12 text-emerald-400" />,
-    color: "from-emerald-600/30 to-teal-900/60",
-    accent: "emerald"
-  },
-  {
-    title: "Módulo MatrizCognis",
-    description: "Um ecossistema especializado para auditoria técnica, onde propostas de projetos são avaliadas com critérios ágeis e inteligência artificial de ponta.",
+    title: "Inteligência de Análise",
+    description: "Aproveite o módulo MatrizCognis para auditorias imparciais assistidas por Inteligência Artificial.",
     icon: <Sparkles className="w-12 h-12 text-purple-400" />,
     color: "from-purple-600/30 to-indigo-950/70",
     accent: "purple"
@@ -116,18 +108,16 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
   const [isEditingClass, setIsEditingClass] = useState(false);
   const [editClassName, setEditClassName] = useState(turmas[0].name);
 
-  // Reinicia animação ao trocar de slide
   useEffect(() => {
     setTitleDone(false);
     setDescDone(false);
   }, [currentSlide]);
 
-  // Transição automática de slide apenas após a leitura completa
   useEffect(() => {
     if (descDone) {
       const nextSlideTimer = setTimeout(() => {
         setCurrentSlide(prev => (prev + 1) % CAROUSEL_STEPS.length);
-      }, 5000); // 5 segundos de permanência após terminar de escrever
+      }, 5000);
       return () => clearTimeout(nextSlideTimer);
     }
   }, [descDone]);
@@ -160,12 +150,10 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-transparent">
-      {/* Luz de fundo pulsante */}
       <div className={`fixed inset-0 transition-colors duration-[3000ms] opacity-20 pointer-events-none bg-${activeSlide.accent}-950`}></div>
 
       <div className="bg-slate-950/70 backdrop-blur-3xl border border-white/10 w-full max-w-5xl h-[700px] rounded-[56px] shadow-[0_48px_128px_-16px_rgba(0,0,0,1)] flex overflow-hidden z-10 ring-1 ring-white/10 animate-fade-in">
         
-        {/* Lado Esquerdo - Carrossel de Texto */}
         <div className={`hidden md:flex flex-col w-1/2 p-12 relative z-10 transition-all duration-[2000ms] bg-gradient-to-br ${activeSlide.color} border-r border-white/5`}>
           <div className="flex-1 flex flex-col justify-center items-center text-center space-y-12">
             <div className="relative">
@@ -177,27 +165,15 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
             
             <div className="space-y-6 min-h-[180px] flex flex-col items-center">
               <h2 className="text-4xl font-black text-white leading-tight tracking-tighter drop-shadow-md">
-                <TypewriterText 
-                    text={activeSlide.title} 
-                    speed={50} 
-                    onComplete={() => setTitleDone(true)} 
-                    active={true}
-                />
+                <TypewriterText text={activeSlide.title} speed={50} onComplete={() => setTitleDone(true)} active={true} />
               </h2>
               <div className="text-white/70 text-lg max-w-xs mx-auto leading-relaxed font-medium min-h-[100px]">
                 {titleDone && (
-                    <TypewriterText 
-                        text={activeSlide.description} 
-                        speed={25} 
-                        onComplete={() => setDescDone(true)}
-                        delay={400}
-                        active={titleDone}
-                    />
+                    <TypewriterText text={activeSlide.description} speed={25} onComplete={() => setDescDone(true)} delay={400} active={titleDone} />
                 )}
               </div>
             </div>
 
-            {/* Pagination dots */}
             <div className="flex gap-2.5">
                 {CAROUSEL_STEPS.map((_, i) => (
                     <div key={i} className={`h-1.5 rounded-full transition-all duration-700 ${i === currentSlide ? 'w-10 bg-white' : 'w-2.5 bg-white/20'}`}></div>
@@ -205,14 +181,13 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
             </div>
           </div>
 
-          {/* Rodapé Branding - MatrizCognis Refined */}
           <div className="pt-10 border-t border-white/10 flex justify-between items-end">
             <div className="text-left group">
                <h1 className="text-3xl font-black text-white italic tracking-tighter drop-shadow-xl transition-transform group-hover:scale-105 duration-500">
                  Matriz<span className="text-orange-500">Cognis</span>
                </h1>
                <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-1">
-                 Com suporte do sistema:
+                 Cloud Development Platform
                </p>
             </div>
             <div className="flex flex-col items-end text-right">
@@ -229,22 +204,19 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        {/* Lado Direito - Formulário de Entrada */}
         <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center bg-slate-950/30 relative">
           <div className="mb-14">
             <div className="flex items-center gap-3 mb-6">
                <div className="bg-gradient-to-br from-orange-400 to-orange-600 p-3 rounded-2xl text-white shadow-[0_0_30px_rgba(249,115,22,0.3)]">
-                  <Cloud size={24} />
+                  <Layers size={24} />
                </div>
-               <span className="text-orange-500 text-[11px] font-black uppercase tracking-[0.5em]">Escola da Nuvem</span>
+               <span className="text-orange-500 text-[11px] font-black uppercase tracking-[0.5em]">Ambiente de Auditoria</span>
             </div>
-            <h2 className="text-6xl font-black text-white tracking-tighter leading-[0.9] mb-4">Portfólio <br/><span className="text-orange-500 italic">Cloud Dev</span></h2>
+            <h2 className="text-6xl font-black text-white tracking-tighter leading-[0.9] mb-4">Acesso ao <br/><span className="text-orange-500 italic">Portfólio</span></h2>
             <div className="w-12 h-1.5 bg-orange-500 rounded-full mb-6"></div>
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Painel de Controle de Acesso</p>
           </div>
 
           <div className="space-y-10">
-            {/* Turma Field */}
             <div className="space-y-3">
               <div className="flex justify-between items-end px-2">
                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Turma Vinculada</label>
@@ -270,7 +242,6 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
               )}
             </div>
 
-            {/* Aluno Field */}
             <div className="space-y-3">
               <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-2">Seu Nome de Guerra</label>
               <div className="relative group">
@@ -279,15 +250,13 @@ const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
               </div>
             </div>
 
-            {/* Access Button */}
             <button onClick={handleAccess} disabled={isLoading} className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-black py-8 rounded-[32px] shadow-[0_20px_40px_-10px_rgba(249,115,22,0.4)] transition-all active:scale-[0.97] flex items-center justify-center gap-5 group overflow-hidden relative">
               <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-12"></div>
-              <span className="relative z-10 text-lg tracking-tighter">{isLoading ? 'SINCRONIZANDO COM A NUVEM...' : 'ACESSAR PORTFÓLIO'}</span>
+              <span className="relative z-10 text-lg tracking-tighter">{isLoading ? 'SINCRONIZANDO...' : 'ACESSAR AGORA'}</span>
               {!isLoading && <ArrowRight size={24} className="relative z-10 transition-transform group-hover:translate-x-3" />}
             </button>
           </div>
-          
-          <p className="absolute bottom-12 left-0 w-full text-center text-[9px] text-slate-800 uppercase font-black tracking-[0.8em] opacity-30 select-none">Engineering Excellence • 2025</p>
+          <p className="absolute bottom-12 left-0 w-full text-center text-[9px] text-slate-800 uppercase font-black tracking-[0.8em] opacity-30 select-none">Ambiente Seguro de Auditoria Técnica</p>
         </div>
       </div>
     </div>
