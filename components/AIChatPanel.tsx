@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { Member, Proposal, VotesState, CRITERIA } from '../types';
@@ -129,8 +130,9 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
 
         const prompt = `${context}\n\nPERGUNTA DO USUÁRIO: ${userMsg}`;
 
+        // Fix: Use 'gemini-3-flash-preview' for basic text tasks as per guidelines.
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: { systemInstruction }
         });
@@ -179,8 +181,9 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
         ]
         `;
 
+        // Fix: Use 'gemini-3-flash-preview' for structured text tasks as per guidelines.
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
             config: { 
                 responseMimeType: "application/json" 
@@ -229,8 +232,9 @@ const AIChatPanel: React.FC<AIChatPanelProps> = ({ proposals, members, votes }) 
         Use formatação **negrito** para destacar pontos chave.
         `;
 
+        // Fix: Use 'gemini-3-flash-preview' for advanced text analysis as per guidelines.
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt
         });
 

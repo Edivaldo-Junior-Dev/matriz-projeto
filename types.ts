@@ -1,8 +1,23 @@
+
+export interface TeamProject {
+  name: string;
+  description: string;
+  link: string;
+}
+
+export interface Team {
+  id: string;
+  teamNumber: number;
+  name: string;
+  members: string[];
+  project: TeamProject;
+}
+
 export interface Proposal {
   id: string;
   name: string;
-  link?: string; // URL to external doc (PDF, Word, Drive)
-  descriptions: string[]; // Corresponding to the 4 criteria
+  link?: string;
+  descriptions: string[];
 }
 
 export interface Member {
@@ -10,9 +25,8 @@ export interface Member {
   name: string;
 }
 
-export type Score = 1 | 2 | 3 | 4 | 5 | 0; // 0 means not voted
+export type Score = 1 | 2 | 3 | 4 | 5 | 0;
 
-// Structure: { memberId: { proposalId: { criteriaIndex: score } } }
 export type VotesState = Record<string, Record<string, Record<number, Score>>>;
 
 export const CRITERIA = [
@@ -25,10 +39,17 @@ export const CRITERIA = [
 // --- AUTH TYPES ---
 export type UserRole = 'admin' | 'member' | 'visitor';
 
+export interface Turma {
+  id: string;
+  name: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
-  avatar?: string;
+  turmaId?: string;
+  turmaName?: string;
+  teamNumber?: number;
 }

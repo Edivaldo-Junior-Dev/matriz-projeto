@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -14,11 +15,40 @@
               primary: '#0f172a',
               secondary: '#334155',
               accent: '#0ea5e9',
+            },
+            animation: {
+              'pulse-slow': 'pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'float': 'float 6s ease-in-out infinite',
+            },
+            keyframes: {
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-20px)' },
+              }
             }
           }
         }
       }
     </script>
+    <style>
+      @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .cloud-bg {
+        background: linear-gradient(-45deg, #0f172a, #1e293b, #030712, #1e1b4b);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+      }
+      .cloud-shape {
+        filter: blur(80px);
+        opacity: 0.15;
+        border-radius: 50%;
+        position: fixed;
+        pointer-events: none;
+      }
+    </style>
 <script type="importmap">
 {
   "imports": {
@@ -34,7 +64,12 @@
 }
 </script>
 </head>
-  <body class="bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
+  <body class="cloud-bg text-slate-900 antialiased dark:text-slate-100 transition-colors duration-200 min-h-screen">
+    <!-- Cloud Visual Elements -->
+    <div class="cloud-shape bg-blue-500 w-[500px] h-[300px] top-[-100px] left-[-100px] animate-pulse-slow"></div>
+    <div class="cloud-shape bg-orange-500 w-[400px] h-[400px] bottom-[-100px] right-[-100px] animate-pulse-slow" style="animation-delay: 2s;"></div>
+    <div class="cloud-shape bg-indigo-500 w-[600px] h-[300px] top-[40%] left-[20%] animate-float" style="opacity: 0.05;"></div>
+    
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

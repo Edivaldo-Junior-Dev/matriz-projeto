@@ -1,324 +1,293 @@
-import React, { useState } from 'react';
-import { User, UserRole } from '../types';
-import { Lock, Mail, ArrowRight, UserCheck, HelpCircle, Eye, EyeOff, Building2, Globe, Linkedin, Layers, User as UserIcon } from 'lucide-react';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { User, UserRole, Turma } from '../types';
+import { 
+  ArrowRight, 
+  UserCheck, 
+  Linkedin, 
+  Layers, 
+  Cloud, 
+  Edit3, 
+  Plus, 
+  Check,
+  BarChart3,
+  Sparkles,
+  School,
+  Globe,
+  Users,
+  LayoutDashboard
+} from 'lucide-react';
+
+// Componente de digitação de alta precisão
+const TypewriterText: React.FC<{ 
+  text: string, 
+  speed?: number, 
+  onComplete?: () => void, 
+  delay?: number,
+  active?: boolean 
+}> = ({ text, speed = 35, onComplete, delay = 0, active = true }) => {
+  const [displayedText, setDisplayedText] = useState('');
+  const [index, setIndex] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reset total quando o texto ou status ativo mudar
+  useEffect(() => {
+    setDisplayedText('');
+    setIndex(0);
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, [text, active]);
+
+  useEffect(() => {
+    if (!active) return;
+
+    // Atraso inicial antes de começar a digitar
+    if (index === 0 && delay > 0) {
+      const initialDelay = setTimeout(() => {
+        setIndex(1);
+      }, delay);
+      return () => clearTimeout(initialDelay);
+    }
+
+    // Lógica de digitação letra por letra
+    if (index >= 0 && index < text.length) {
+      timerRef.current = setTimeout(() => {
+        setDisplayedText(text.substring(0, index + 1));
+        setIndex(prev => prev + 1);
+      }, speed);
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
+    } 
+    // Finalização da frase
+    else if (index >= text.length && text.length > 0) {
+      if (onComplete) {
+        const finalizeTimer = setTimeout(onComplete, 300);
+        return () => clearTimeout(finalizeTimer);
+      }
+    }
+  }, [index, text, speed, onComplete, delay, active]);
+
+  return <span>{displayedText}</span>;
+};
 
 interface LoginPanelProps {
   onLogin: (user: User) => void;
 }
 
-// Simulação de Banco de Dados de Usuários
-const REGISTERED_USERS = [
-  { email: 'edivaldopererialimajunior@gmail.com', pass: '19100801', id: 'edivaldo', name: 'Edivaldo Junior', role: 'admin' as UserRole },
-  { email: 'cynthia@matrix.app', pass: '19100801', id: 'cynthia', name: 'Cynthia Borelli', role: 'member' as UserRole },
-  { email: 'nayaraluprinda@hotmail.com', pass: '19100801', id: 'naiara', name: 'Naiara Oliveira', role: 'member' as UserRole },
-  { email: 'emanuelheraclio@gmail.com', pass: '19100801', id: 'emanuel', name: 'Emanuel Heráclio', role: 'member' as UserRole },
-  { email: 'bianosantos32@gmail.com', pass: '19100801', id: 'fabiano', name: 'Fabiano Santana', role: 'member' as UserRole },
-  { email: 'gabriel@matrix.app', pass: '19100801', id: 'gabriel', name: 'Gabriel Araujo', role: 'member' as UserRole },
+const CAROUSEL_STEPS = [
+  {
+    title: "Sua Jornada na Nuvem",
+    description: "Identifique-se com sua turma e nome para centralizar e organizar todo o seu portfólio de desenvolvimento cloud em um único lugar seguro e profissional.",
+    icon: <LayoutDashboard className="w-12 h-12 text-blue-400" />,
+    color: "from-blue-600/30 to-indigo-900/60",
+    accent: "blue"
+  },
+  {
+    title: "Hub de Colaboração",
+    description: "Publique seu projeto e visualize as entregas de todas as equipes da sua turma. O conhecimento compartilhado acelera a evolução técnica do grupo.",
+    icon: <Users className="w-12 h-12 text-emerald-400" />,
+    color: "from-emerald-600/30 to-teal-900/60",
+    accent: "emerald"
+  },
+  {
+    title: "Módulo MatrizCognis",
+    description: "Um ecossistema especializado para auditoria técnica, onde propostas de projetos são avaliadas com critérios ágeis e inteligência artificial de ponta.",
+    icon: <Sparkles className="w-12 h-12 text-purple-400" />,
+    color: "from-purple-600/30 to-indigo-950/70",
+    accent: "purple"
+  }
 ];
 
 const LoginPanel: React.FC<LoginPanelProps> = ({ onLogin }) => {
-  const [view, setView] = useState<'login' | 'forgot' | 'visitor'>('login');
-  // Inicializa o campo com o seu email para facilitar o acesso, mas permite alteração
-  const [email, setEmail] = useState('edivaldopererialimajunior@gmail.com');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [visitorName, setVisitorName] = useState(''); // Novo estado para nome do visitante
-  const [error, setError] = useState('');
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [titleDone, setTitleDone] = useState(false);
+  const [descDone, setDescDone] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const [turmas, setTurmas] = useState<Turma[]>(() => {
+    const saved = localStorage.getItem('matrix_turmas');
+    return saved ? JSON.parse(saved) : [
+      { id: 'turma_default', name: 'C10 OUT - BRSAO 207 Noite - R2' }
+    ];
+  });
+  
+  const [selectedTurmaId, setSelectedTurmaId] = useState(turmas[0].id);
+  const [userName, setUserName] = useState('');
+  const [isEditingClass, setIsEditingClass] = useState(false);
+  const [editClassName, setEditClassName] = useState(turmas[0].name);
 
-  // CREDENCIAIS ADMINISTRADOR
-  const ADMIN_EMAIL = 'edivaldopererialimajunior@gmail.com';
+  // Reinicia animação ao trocar de slide
+  useEffect(() => {
+    setTitleDone(false);
+    setDescDone(false);
+  }, [currentSlide]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+  // Transição automática de slide apenas após a leitura completa
+  useEffect(() => {
+    if (descDone) {
+      const nextSlideTimer = setTimeout(() => {
+        setCurrentSlide(prev => (prev + 1) % CAROUSEL_STEPS.length);
+      }, 5000); // 5 segundos de permanência após terminar de escrever
+      return () => clearTimeout(nextSlideTimer);
+    }
+  }, [descDone]);
 
-    // Simulate API delay
-    setTimeout(() => {
-      const userFound = REGISTERED_USERS.find(
-        u => u.email.toLowerCase() === email.toLowerCase() && u.pass === password
-      );
-
-      if (userFound) {
-        onLogin({
-          id: userFound.id,
-          name: userFound.name,
-          email: userFound.email,
-          role: userFound.role
-        });
-      } else {
-        setError('Credenciais inválidas. Verifique e tente novamente.');
-        setIsLoading(false);
-      }
-    }, 800);
-  };
-
-  const handleVisitorAccess = (type: 'recruiter' | 'aws') => {
-    if (!visitorName.trim()) {
-        setError('Por favor, digite seu nome para continuar.');
-        return;
+  const handleAccess = () => {
+    if (!userName.trim()) {
+      alert("Por favor, digite seu nome.");
+      return;
     }
 
     setIsLoading(true);
-    
-    // Personaliza o nome baseado no input + contexto
-    const suffix = type === 'recruiter' ? ' (Recrutador)' : ' (AWS)';
-    const finalName = `${visitorName}${suffix}`;
+    const selectedTurma = turmas.find(t => t.id === selectedTurmaId);
+    const teamIntegrantes = ['edivaldo', 'cynthia', 'naiara', 'emanuel', 'fabiano', 'gabriel'];
+    const isTeam3 = teamIntegrantes.some(name => userName.toLowerCase().includes(name));
 
     setTimeout(() => {
       onLogin({
-        id: `visitor_${Date.now()}`,
-        name: finalName,
-        email: 'guest@matrix.app',
-        role: 'visitor'
+        id: `user_${Date.now()}`,
+        name: userName,
+        email: 'cloud@dev.app',
+        role: 'member',
+        turmaId: selectedTurmaId,
+        turmaName: selectedTurma?.name,
+        teamNumber: isTeam3 ? 3 : undefined
       });
-    }, 600);
+    }, 800);
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert(`SIMULAÇÃO: A solicitação foi enviada para o email centralizador da equipe: ${ADMIN_EMAIL}. Verifique sua caixa de entrada.`);
-    setView('login');
-  };
+  const activeSlide = CAROUSEL_STEPS[currentSlide];
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-100 p-4 relative overflow-hidden">
-      
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-transparent">
+      {/* Luz de fundo pulsante */}
+      <div className={`fixed inset-0 transition-colors duration-[3000ms] opacity-20 pointer-events-none bg-${activeSlide.accent}-950`}></div>
 
-      <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700 w-full max-w-4xl h-[650px] rounded-2xl shadow-2xl flex overflow-hidden z-10 animate-fade-in">
+      <div className="bg-slate-950/70 backdrop-blur-3xl border border-white/10 w-full max-w-5xl h-[700px] rounded-[56px] shadow-[0_48px_128px_-16px_rgba(0,0,0,1)] flex overflow-hidden z-10 ring-1 ring-white/10 animate-fade-in">
         
-        {/* Left Column: Brand Identity */}
-        <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-slate-900 p-12 border-r border-slate-700 relative z-10 text-center">
-          
-          {/* Logo Section Centralized */}
-          <div className="flex flex-col items-center justify-center flex-1">
-              <div className="mb-6 relative group">
-                 {/* Logo Image Replaced with Icon Component */}
-                 <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-8 rounded-3xl text-white shadow-[0_0_40px_rgba(37,99,235,0.4)] transform hover:scale-105 transition-transform duration-500">
-                     <Layers size={80} strokeWidth={1.5} />
-                 </div>
+        {/* Lado Esquerdo - Carrossel de Texto */}
+        <div className={`hidden md:flex flex-col w-1/2 p-12 relative z-10 transition-all duration-[2000ms] bg-gradient-to-br ${activeSlide.color} border-r border-white/5`}>
+          <div className="flex-1 flex flex-col justify-center items-center text-center space-y-12">
+            <div className="relative">
+                <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full scale-150 animate-pulse-slow"></div>
+                <div className="relative bg-slate-900/60 backdrop-blur-2xl p-12 rounded-[48px] border border-white/20 shadow-2xl animate-float">
+                   {activeSlide.icon}
+                </div>
+            </div>
+            
+            <div className="space-y-6 min-h-[180px] flex flex-col items-center">
+              <h2 className="text-4xl font-black text-white leading-tight tracking-tighter drop-shadow-md">
+                <TypewriterText 
+                    text={activeSlide.title} 
+                    speed={50} 
+                    onComplete={() => setTitleDone(true)} 
+                    active={true}
+                />
+              </h2>
+              <div className="text-white/70 text-lg max-w-xs mx-auto leading-relaxed font-medium min-h-[100px]">
+                {titleDone && (
+                    <TypewriterText 
+                        text={activeSlide.description} 
+                        speed={25} 
+                        onComplete={() => setDescDone(true)}
+                        delay={400}
+                        active={titleDone}
+                    />
+                )}
               </div>
-              
-              <div className="space-y-2">
-                <h1 className="text-5xl font-extrabold text-white leading-none font-sans tracking-tight">
-                  Matri<span className="text-blue-500">Z</span>Cognis
-                </h1>
-                <p className="text-slate-500 text-xs uppercase tracking-[0.3em] font-medium">
-                  Matriz de Análise Comparativa
-                </p>
-              </div>
+            </div>
+
+            {/* Pagination dots */}
+            <div className="flex gap-2.5">
+                {CAROUSEL_STEPS.map((_, i) => (
+                    <div key={i} className={`h-1.5 rounded-full transition-all duration-700 ${i === currentSlide ? 'w-10 bg-white' : 'w-2.5 bg-white/20'}`}></div>
+                ))}
+            </div>
           </div>
 
-          <div className="w-full pt-8 border-t border-slate-800/50">
-             <p className="text-slate-400 text-sm leading-relaxed mb-4 max-w-xs mx-auto">
-               Plataforma avançada para tomada de decisão estratégica em projetos de software.
-            </p>
-            <div className="flex flex-col items-center gap-1">
-              <p className="text-slate-600 text-xs uppercase font-bold">Desenvolvido por</p>
-              <a 
-                href="https://www.linkedin.com/in/edivaldojuniordev/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-blue-500 hover:text-blue-400 transition-colors font-medium flex items-center gap-2"
-              >
-                <Linkedin size={16} />
-                Edivaldo Junior
-              </a>
+          {/* Rodapé Branding - MatrizCognis Refined */}
+          <div className="pt-10 border-t border-white/10 flex justify-between items-end">
+            <div className="text-left group">
+               <h1 className="text-3xl font-black text-white italic tracking-tighter drop-shadow-xl transition-transform group-hover:scale-105 duration-500">
+                 Matriz<span className="text-orange-500">Cognis</span>
+               </h1>
+               <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] mt-1">
+                 Com suporte do sistema:
+               </p>
+            </div>
+            <div className="flex flex-col items-end text-right">
+              <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Engenharia de Software:</p>
+              <div className="flex items-center gap-3">
+                <a href="https://www.linkedin.com/in/edivaldojuniordev/" target="_blank" className="text-white hover:text-orange-500 font-black text-xs transition-all uppercase tracking-tighter">
+                  Edivaldo Junior
+                </a>
+                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors">
+                  <Linkedin size={14} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Forms */}
-        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white dark:bg-slate-800 relative">
-          
-          {/* LOGIN VIEW */}
-          {view === 'login' && (
-            <div className="animate-fade-in space-y-6">
-              <div>
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Login</h2>
-                <p className="text-slate-500 text-sm">Acesso para Administradores e Membros.</p>
-              </div>
+        {/* Lado Direito - Formulário de Entrada */}
+        <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center bg-slate-950/30 relative">
+          <div className="mb-14">
+            <div className="flex items-center gap-3 mb-6">
+               <div className="bg-gradient-to-br from-orange-400 to-orange-600 p-3 rounded-2xl text-white shadow-[0_0_30px_rgba(249,115,22,0.3)]">
+                  <Cloud size={24} />
+               </div>
+               <span className="text-orange-500 text-[11px] font-black uppercase tracking-[0.5em]">Escola da Nuvem</span>
+            </div>
+            <h2 className="text-6xl font-black text-white tracking-tighter leading-[0.9] mb-4">Portfólio <br/><span className="text-orange-500 italic">Cloud Dev</span></h2>
+            <div className="w-12 h-1.5 bg-orange-500 rounded-full mb-6"></div>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em]">Painel de Controle de Acesso</p>
+          </div>
 
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Email Cadastrado</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 text-slate-400" size={18} />
-                    <input 
-                      type="email" 
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                      placeholder="seu.email@exemplo.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="flex justify-between items-center text-xs font-bold uppercase text-slate-500 mb-1">
-                    <span>Senha</span>
-                    <button type="button" onClick={() => setView('forgot')} className="text-blue-500 hover:text-blue-600 normal-case font-normal">Esqueceu?</button>
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
-                    <input 
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                      placeholder="••••••••"
-                      required
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-xs p-3 rounded flex items-center gap-2">
-                    <HelpCircle size={14} /> {error}
-                  </div>
+          <div className="space-y-10">
+            {/* Turma Field */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-end px-2">
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Turma Vinculada</label>
+                {!isEditingClass ? (
+                  <button onClick={() => setIsEditingClass(true)} className="text-orange-500 hover:text-orange-400 text-[10px] font-black uppercase tracking-widest transition-colors flex items-center gap-1.5"><Edit3 size={11} /> Ajustar</button>
+                ) : (
+                  <button onClick={() => {
+                    setTurmas(t => t.map(x => x.id === selectedTurmaId ? {...x, name: editClassName} : x));
+                    setIsEditingClass(false);
+                  }} className="text-emerald-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"><Check size={14} /> Confirmar</button>
                 )}
-
-                <button 
-                  type="submit" 
-                  disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg hover:shadow-blue-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
-                >
-                  {isLoading ? 'Autenticando...' : 'Acessar Sistema'} <ArrowRight size={18} />
-                </button>
-              </form>
-              
-              <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-                <span className="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase">Ou</span>
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
               </div>
 
-              <button 
-                onClick={() => setView('visitor')}
-                className="w-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
-              >
-                <Globe size={16} /> Portal do Visitante
-              </button>
-            </div>
-          )}
-
-          {/* VISITOR VIEW */}
-          {view === 'visitor' && (
-            <div className="animate-fade-in space-y-4 text-center">
-              <div className="mb-4">
-                 <div className="inline-flex items-center justify-center p-4 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full mb-4">
-                    <Globe size={32} />
-                 </div>
-                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Acesso Visitante</h2>
-                 <p className="text-slate-500 text-sm mt-2">Identifique-se para acessar a matriz.</p>
-              </div>
-
-              {/* INPUT NOME DO VISITANTE */}
-              <div className="text-left">
-                  <label className="block text-xs font-bold uppercase text-slate-500 mb-1 ml-1">Seu Nome</label>
-                  <div className="relative mb-4">
-                    <UserIcon className="absolute left-3 top-3 text-slate-400" size={18} />
-                    <input 
-                      type="text" 
-                      value={visitorName}
-                      onChange={e => setVisitorName(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none transition-all"
-                      placeholder="Digite seu nome completo..."
-                      required
-                    />
-                  </div>
-              </div>
-
-              {error && (
-                  <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 text-xs p-3 rounded flex items-center gap-2 mb-2 text-left">
-                    <HelpCircle size={14} /> {error}
-                  </div>
-              )}
-
-              <div className="space-y-3">
-                <button 
-                    onClick={() => handleVisitorAccess('recruiter')}
-                    className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all flex items-center gap-4 text-left group"
-                >
-                    <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-slate-500 group-hover:text-purple-600">
-                        <UserCheck size={20} />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-slate-800 dark:text-white text-sm">Entrar como Recrutador / Tech Lead</h3>
-                        <p className="text-xs text-slate-500">Visualizar código e arquitetura.</p>
-                    </div>
-                </button>
-
-                <button 
-                    onClick={() => handleVisitorAccess('aws')}
-                    className="w-full p-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all flex items-center gap-4 text-left group"
-                >
-                    <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-slate-500 group-hover:text-orange-600">
-                        <Building2 size={20} />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-slate-800 dark:text-white text-sm">Entrar como Equipe AWS / Cloud</h3>
-                        <p className="text-xs text-slate-500">Avaliar integração e performance.</p>
-                    </div>
-                </button>
-              </div>
-
-              <button 
-                onClick={() => setView('login')}
-                className="mt-4 text-slate-400 hover:text-slate-600 text-sm underline decoration-slate-300 underline-offset-4"
-              >
-                Voltar para Login
-              </button>
-            </div>
-          )}
-
-          {/* FORGOT PASSWORD VIEW */}
-          {view === 'forgot' && (
-             <div className="animate-fade-in space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Recuperar Acesso</h2>
-                  <p className="text-slate-500 text-sm">Digite seu email registrado para receber o link.</p>
+              {isEditingClass ? (
+                <input type="text" value={editClassName} onChange={e => setEditClassName(e.target.value)} className="w-full bg-slate-900 border border-emerald-500/40 rounded-3xl px-7 py-6 text-sm text-white outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-bold" />
+              ) : (
+                <div className="relative group">
+                  <select value={selectedTurmaId} onChange={e => setSelectedTurmaId(e.target.value)} className="w-full bg-slate-900/50 border-2 border-slate-800/40 rounded-[28px] px-7 py-6 text-sm text-white appearance-none focus:border-orange-500/50 outline-none transition-all cursor-pointer font-black tracking-tight">
+                    {turmas.map(t => <option key={t.id} value={t.id} className="bg-slate-950">{t.name}</option>)}
+                  </select>
+                  <School className="absolute right-7 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none group-hover:text-orange-500 transition-colors" size={20} />
                 </div>
-                
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Email Corporativo</label>
-                        <input 
-                            type="email" 
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg py-2.5 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="seu@email.com"
-                            required
-                        />
-                    </div>
-                    <button 
-                        type="submit" 
-                        className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold py-3 rounded-lg shadow-lg hover:opacity-90 transition-opacity"
-                    >
-                        Enviar Solicitação
-                    </button>
-                </form>
+              )}
+            </div>
 
-                <button 
-                    onClick={() => setView('login')}
-                    className="w-full text-center text-sm text-slate-500 hover:text-blue-500 mt-4"
-                >
-                    Voltar para o Login
-                </button>
-             </div>
-          )}
+            {/* Aluno Field */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest px-2">Seu Nome de Guerra</label>
+              <div className="relative group">
+                <input type="text" value={userName} onChange={e => setUserName(e.target.value)} className="w-full bg-slate-900/50 border-2 border-slate-800/40 rounded-[28px] px-9 py-7 text-white focus:border-orange-500 focus:bg-slate-900 outline-none font-black transition-all placeholder:text-slate-800 text-xl tracking-tight" placeholder="Identifique-se..." />
+                <UserCheck className="absolute right-9 top-1/2 -translate-y-1/2 text-slate-700 transition-colors group-focus-within:text-orange-500" size={26} />
+              </div>
+            </div>
 
+            {/* Access Button */}
+            <button onClick={handleAccess} disabled={isLoading} className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-black py-8 rounded-[32px] shadow-[0_20px_40px_-10px_rgba(249,115,22,0.4)] transition-all active:scale-[0.97] flex items-center justify-center gap-5 group overflow-hidden relative">
+              <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-12"></div>
+              <span className="relative z-10 text-lg tracking-tighter">{isLoading ? 'SINCRONIZANDO COM A NUVEM...' : 'ACESSAR PORTFÓLIO'}</span>
+              {!isLoading && <ArrowRight size={24} className="relative z-10 transition-transform group-hover:translate-x-3" />}
+            </button>
+          </div>
+          
+          <p className="absolute bottom-12 left-0 w-full text-center text-[9px] text-slate-800 uppercase font-black tracking-[0.8em] opacity-30 select-none">Engineering Excellence • 2025</p>
         </div>
       </div>
     </div>
