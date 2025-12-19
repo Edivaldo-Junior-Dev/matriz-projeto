@@ -42,7 +42,7 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onE
         {teams.map((team) => (
           <div 
             key={team.id}
-            className="group relative bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-orange-500/50 overflow-hidden"
+            className="group relative bg-white dark:bg-slate-900 cloud-shape-discreet border border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:border-orange-500/50 overflow-hidden"
           >
             {/* Header Card */}
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-start">
@@ -89,14 +89,14 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onE
             <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 flex gap-2">
                <button 
                   onClick={() => onEnterMatrix(team)}
-                  className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 rounded-2xl text-xs font-black flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg"
+                  className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 cloud-shape-button text-xs font-black flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg"
                 >
                  <BarChart3 size={16} /> MATRIZ COGNIS
                </button>
             </div>
 
             {/* Glow Effect on Hover */}
-            <div className="absolute inset-0 border-2 border-orange-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl pointer-events-none blur-[2px]"></div>
+            <div className="absolute inset-0 border-2 border-orange-500 opacity-0 group-hover:opacity-100 transition-opacity cloud-shape-discreet pointer-events-none blur-[2px]"></div>
           </div>
         ))}
       </div>
@@ -104,7 +104,7 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onE
       {/* Edit Modal */}
       {editingTeamId && editForm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-           <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-2xl cloud-shape-discreet shadow-2xl overflow-hidden animate-fade-in-up">
               <div className="bg-orange-500 p-6 text-white flex justify-between items-center">
                  <h3 className="text-xl font-black">Configurar Equipe {editForm.teamNumber}</h3>
                  <button onClick={() => setEditingTeamId(null)} className="text-white hover:opacity-70 font-bold">FECHAR</button>
@@ -113,28 +113,28 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onE
                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                        <label className="text-xs font-black uppercase text-slate-400">Nome da Equipe</label>
-                       <input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm" />
+                       <input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 cloud-shape-discreet text-sm" />
                     </div>
                     <div className="space-y-1">
                        <label className="text-xs font-black uppercase text-slate-400">Nome do Projeto</label>
-                       <input value={editForm.project.name} onChange={e => setEditForm({...editForm, project: {...editForm.project, name: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm" />
+                       <input value={editForm.project.name} onChange={e => setEditForm({...editForm, project: {...editForm.project, name: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 cloud-shape-discreet text-sm" />
                     </div>
                  </div>
                  <div className="space-y-1">
                     <label className="text-xs font-black uppercase text-slate-400">Descrição do Projeto</label>
-                    <textarea rows={3} value={editForm.project.description} onChange={e => setEditForm({...editForm, project: {...editForm.project, description: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm resize-none" />
+                    <textarea rows={3} value={editForm.project.description} onChange={e => setEditForm({...editForm, project: {...editForm.project, description: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 cloud-shape-discreet text-sm resize-none" />
                  </div>
                  <div className="space-y-1">
                     <label className="text-xs font-black uppercase text-slate-400">Integrantes (separados por vírgula)</label>
-                    <input value={editForm.members.join(', ')} onChange={e => setEditForm({...editForm, members: e.target.value.split(',').map(s => s.trim())})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm" />
+                    <input value={editForm.members.join(', ')} onChange={e => setEditForm({...editForm, members: e.target.value.split(',').map(s => s.trim())})} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 cloud-shape-discreet text-sm" />
                  </div>
                  <div className="space-y-1">
                     <label className="text-xs font-black uppercase text-slate-400">Link do Portfólio/MVP (Para uso futuro)</label>
-                    <input value={editForm.project.link} onChange={e => setEditForm({...editForm, project: {...editForm.project, link: e.target.value}})} placeholder="Opcional: Adicione um link se desejar" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl text-sm" />
+                    <input value={editForm.project.link} onChange={e => setEditForm({...editForm, project: {...editForm.project, link: e.target.value}})} placeholder="Opcional: Adicione um link se desejar" className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 cloud-shape-discreet text-sm" />
                  </div>
               </div>
               <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                 <button onClick={handleSave} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2">
+                 <button onClick={handleSave} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 cloud-shape-button shadow-lg transition-all flex items-center justify-center gap-2">
                     <Check size={20} /> SALVAR ALTERAÇÕES
                  </button>
               </div>

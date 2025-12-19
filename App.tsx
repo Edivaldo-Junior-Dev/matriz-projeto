@@ -145,15 +145,17 @@ const App: React.FC = () => {
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             {view === 'matrix' && (
-              <button onClick={() => setView('dashboard')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 transition-colors">
+              <button onClick={() => setView('dashboard')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 cloud-shape-discreet text-slate-500 transition-colors">
                 <ChevronLeft size={20} />
               </button>
             )}
-            <div className="bg-orange-500 text-white p-2 rounded-lg shadow-lg shadow-orange-500/20"><Layers size={20} /></div>
+            <div className="bg-orange-500 text-white p-2 cloud-shape-discreet shadow-lg shadow-orange-500/20"><Layers size={20} /></div>
             <div>
-              <h1 className="text-xl font-black dark:text-white leading-none tracking-tighter flex items-center gap-2">
-                portfolioclouddev<span className="text-orange-500">.com.br</span>
-                <Cloud size={14} className="text-orange-400 hidden sm:block animate-pulse" />
+              <h1 className="text-xl font-black dark:text-white leading-none tracking-tighter flex items-center gap-1">
+                portfolioclouddev<span className="text-orange-500 text-xs mt-1">.edivaldojuniordev.com.br</span>
+                <div className="animate-float">
+                    <Cloud size={14} className="text-orange-400 hidden sm:block" />
+                </div>
               </h1>
               <p className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-wider flex items-center gap-2">
                 {syncStatus === 'online' ? <span className="text-emerald-500">● ONLINE</span> : <span className="text-red-500">● {syncStatus.toUpperCase()}</span>}
@@ -166,10 +168,10 @@ const App: React.FC = () => {
             <button onClick={() => fetchVotes()} className="p-2 text-slate-400 hover:text-orange-500 transition-colors" title="Recarregar Dados">
               <RefreshCw size={18} className={isSeeding ? 'animate-spin' : ''} />
             </button>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-slate-500 hover:text-orange-500 transition-colors bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-slate-500 hover:text-orange-500 transition-colors bg-slate-100 dark:bg-slate-800 cloud-shape-discreet border border-slate-200 dark:border-slate-700">
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <button onClick={() => { localStorage.removeItem('matrix_user'); setCurrentUser(null); }} className="p-2 text-red-500 hover:bg-red-500 hover:text-white dark:hover:bg-red-900/40 rounded-xl transition-all border border-red-500/20">
+            <button onClick={() => { localStorage.removeItem('matrix_user'); setCurrentUser(null); }} className="p-2 text-red-500 hover:bg-red-500 hover:text-white dark:hover:bg-red-900/40 cloud-shape-discreet transition-all border border-red-500/20">
               <LogOut size={20} />
             </button>
           </div>
@@ -180,9 +182,9 @@ const App: React.FC = () => {
         {view === 'dashboard' ? (
           <div className="space-y-8">
             {currentUser.teamNumber === 3 && (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-[32px] flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-down shadow-xl shadow-emerald-500/5">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 p-5 cloud-shape-discreet flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-down shadow-xl shadow-emerald-500/5">
                 <div className="flex items-center gap-4 text-center md:text-left">
-                  <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-lg shadow-emerald-500/20">
+                  <div className="bg-emerald-500 text-white p-3 cloud-shape-discreet shadow-lg shadow-emerald-500/20">
                     <CheckCircle size={24} />
                   </div>
                   <div>
@@ -192,7 +194,7 @@ const App: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setView('matrix')}
-                  className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-2xl text-sm font-black shadow-xl shadow-emerald-600/20 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2"
+                  className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 cloud-shape-button rounded-2xl text-sm font-black shadow-xl shadow-emerald-600/20 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2"
                 >
                   ACESSAR MINHA MATRIZ <ChevronLeft size={18} className="rotate-180" />
                 </button>
@@ -208,9 +210,9 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div className="animate-fade-in">
-            <div className="mb-8 flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-900 shadow-xl p-6 rounded-3xl border border-slate-200 dark:border-slate-800 gap-4">
+            <div className="mb-8 flex flex-col md:flex-row items-center justify-between bg-white dark:bg-slate-900 shadow-xl p-6 cloud-shape-discreet border border-slate-200 dark:border-slate-800 gap-4">
                <div className="flex items-center gap-4">
-                  <div className="bg-orange-500/10 text-orange-500 p-3 rounded-2xl">
+                  <div className="bg-orange-500/10 text-orange-500 p-3 cloud-shape-discreet">
                      <BarChart3 size={24} />
                   </div>
                   <div>
@@ -218,10 +220,10 @@ const App: React.FC = () => {
                     <p className="text-slate-500 text-sm">Auditoria Técnica em Tempo Real</p>
                   </div>
                </div>
-               <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
-                  <button onClick={() => setActiveTab('vote')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'vote' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-md' : 'text-slate-500'}`}>VOTAÇÃO</button>
-                  <button onClick={() => setActiveTab('results')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'results' ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-md' : 'text-slate-500'}`}>MATRIZ</button>
-                  <button onClick={() => setActiveTab('ai')} className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${activeTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}>IA CONSULTOR</button>
+               <div className="flex bg-slate-100 dark:bg-slate-800 p-1 cloud-shape-discreet border border-slate-200 dark:border-slate-700">
+                  <button onClick={() => setActiveTab('vote')} className={`px-6 py-2.5 cloud-shape-button text-xs font-black transition-all ${activeTab === 'vote' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-md' : 'text-slate-500'}`}>VOTAÇÃO</button>
+                  <button onClick={() => setActiveTab('results')} className={`px-6 py-2.5 cloud-shape-button text-xs font-black transition-all ${activeTab === 'results' ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-md' : 'text-slate-500'}`}>MATRIZ</button>
+                  <button onClick={() => setActiveTab('ai')} className={`px-6 py-2.5 cloud-shape-button text-xs font-black transition-all ${activeTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}>IA CONSULTOR</button>
                </div>
             </div>
 
@@ -240,7 +242,7 @@ const App: React.FC = () => {
       </main>
       
       <footer className="py-8 text-center text-[10px] text-slate-500 font-bold uppercase tracking-[0.4em] opacity-30">
-        portfolioclouddev.com.br • Sincronizado via Supabase
+        portfolioclouddev.edivaldojuniordev.com.br • Sincronizado via Supabase
       </footer>
     </div>
   );
