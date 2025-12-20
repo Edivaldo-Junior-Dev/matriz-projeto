@@ -4,49 +4,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>portfolioclouddev.edivaldojuniordev.com.br | Auditoria de Projetos</title>
-    <meta name="description" content="Ferramenta de análise técnica e auditoria de projetos baseada em critérios ágeis." />
-    <!-- Fonte Montserrat para um visual moderno e limpo -->
+    <title>Portfólio Cloud Dev | MatrizCognis</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
         theme: {
           extend: {
-            fontFamily: {
-              sans: ['Montserrat', 'sans-serif'],
-            },
-            colors: {
-              primary: '#0f172a',
-              secondary: '#334155',
-              accent: '#0ea5e9',
-            },
+            fontFamily: { sans: ['Montserrat', 'sans-serif'] },
             animation: {
-              'pulse-slow': 'pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'float': 'float 3s ease-in-out infinite',
-              'float-slow': 'float 5s ease-in-out infinite',
-              'spin-slow': 'spin 12s linear infinite',
-              'glint': 'glint 3s ease-in-out infinite',
-              'pulse-fade': 'pulseFade 3s ease-in-out infinite',
-              'cloud-glow-blue': 'cloudGlowBlue 4s ease-in-out infinite',
+              'float': 'float 4s ease-in-out infinite',
+              'float-slow': 'float 6s ease-in-out infinite',
+              'pulse-neon': 'pulse-neon 2s ease-in-out infinite',
             },
             keyframes: {
               float: {
-                '0%, 100%': { transform: 'translateY(0) scale(1)' },
-                '50%': { transform: 'translateY(-12px) scale(1.02)' },
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-20px)' },
               },
-              glint: {
-                '0%': { transform: 'translateX(-150%) skewX(-20deg)' },
-                '100%': { transform: 'translateX(250%) skewX(-20deg)' },
-              },
-              pulseFade: {
-                '0%, 100%': { opacity: '0.4', transform: 'scale(0.98)' },
-                '50%': { opacity: '1', transform: 'scale(1)' },
-              },
-              cloudGlowBlue: {
-                '0%, 100%': { boxShadow: '0 0 20px rgba(14, 165, 233, 0.2)', borderColor: 'rgba(14, 165, 233, 0.1)' },
-                '50%': { boxShadow: '0 0 40px rgba(14, 165, 233, 0.5)', borderColor: 'rgba(14, 165, 233, 0.4)' },
+              'pulse-neon': {
+                '0%, 100%': { boxShadow: '0 0 5px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3)' },
+                '50%': { boxShadow: '0 0 15px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.5)' },
               }
             }
           }
@@ -54,40 +32,12 @@
       }
     </script>
     <style>
-      body {
-        font-family: 'Montserrat', sans-serif;
-      }
-      .cloud-bg {
-        background: #0f172a; 
-      }
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #0f172a;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #1e293b;
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #334155;
-      }
-      
-      /* Formato de nuvem discreto e orgânico (versão estável da foto) */
-      .cloud-shape-discreet {
-        border-radius: 40px 25px 35px 20px / 25px 35px 20px 40px;
-      }
-      
-      /* Formato de nuvem para botões */
-      .cloud-shape-button {
-        border-radius: 20px 40px 25px 35px / 35px 25px 40px 20px;
-      }
-
-      /* Animação suave de pulso para o cabeçalho superior */
-      .cloud-header-pulse {
-        animation: pulseFade 3s ease-in-out infinite;
-      }
+      body { background-color: #030014; color: #fff; overflow-x: hidden; }
+      .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+      .neon-border { border: 1px solid rgba(59, 130, 246, 0.5); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+      .cloud-shape { border-radius: 60px 80px 30px 90px; }
+      .cloud-shape-btn { border-radius: 20px 40px 10px 30px; }
+      .cloud-shape-discreet { border-radius: 30px 40px 20px 35px; }
     </style>
 <script type="importmap">
 {
@@ -105,8 +55,8 @@
 }
 </script>
 </head>
-  <body class="cloud-bg text-slate-900 antialiased dark:text-slate-100 transition-colors duration-200 min-h-screen relative overflow-x-hidden">
-    <div id="root" class="relative z-10"></div>
+  <body class="antialiased min-h-screen">
+    <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
