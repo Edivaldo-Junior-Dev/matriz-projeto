@@ -16,11 +16,16 @@
               'float': 'float 4s ease-in-out infinite',
               'float-slow': 'float 6s ease-in-out infinite',
               'pulse-neon': 'pulse-neon 2s ease-in-out infinite',
+              'pulse-soft': 'pulse-scale 3s ease-in-out infinite',
             },
             keyframes: {
               float: {
                 '0%, 100%': { transform: 'translateY(0)' },
                 '50%': { transform: 'translateY(-20px)' },
+              },
+              'pulse-scale': {
+                '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+                '50%': { transform: 'scale(1.02)', opacity: '0.9' },
               },
               'pulse-neon': {
                 '0%, 100%': { boxShadow: '0 0 5px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3)' },

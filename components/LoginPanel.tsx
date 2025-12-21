@@ -84,6 +84,8 @@ const LoginPanel: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin }) =>
   const [currentSlide, setCurrentSlide] = useState(0);
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [placeholder, setPlaceholder] = useState('');
+  const fullPlaceholder = "Identifique-se...";
   const turmas = [{ id: 't1', name: 'C10 OUT - BRSAO 207 Noite - R2' }];
 
   useEffect(() => {
@@ -91,6 +93,17 @@ const LoginPanel: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin }) =>
       setCurrentSlide(prev => (prev + 1) % CAROUSEL_STEPS.length);
     }, 10000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Efeito de digitação para o placeholder
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      setPlaceholder(fullPlaceholder.slice(0, i));
+      i = (i + 1) % (fullPlaceholder.length + 1);
+      if (i === 0) i = 0; // Reinicia suavemente
+    }, 200);
+    return () => clearInterval(interval);
   }, []);
 
   const handleAccess = () => {
@@ -169,14 +182,14 @@ const LoginPanel: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin }) =>
             {/* Link Bar Neon */}
             <div className="flex justify-center mb-12">
                <div className="px-8 py-3 rounded-full neon-border bg-white flex items-center gap-3 animate-pulse-neon transition-all">
-                  <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest">
+                  <span className="text-[11px] font-black text-slate-900 tracking-widest">
                     portfolioclouddev.edivaldojuniordev.com.br
                   </span>
                   <Cloud size={16} className="text-blue-500" />
                </div>
             </div>
             
-            {/* Título: Portfólio CloudDev (Nome completo sem espaço conforme pedido) */}
+            {/* Título: Portfólio CloudDev */}
             <div className="mb-6">
               <h2 className="text-[72px] font-black text-white tracking-tighter leading-[0.8]">
                 Portfólio<br/>
@@ -206,14 +219,13 @@ const LoginPanel: React.FC<{ onLogin: (user: User) => void }> = ({ onLogin }) =>
 
             {/* Identifique-se */}
             <div className="space-y-3">
-              <label className="text-[11px] font-black uppercase text-white/30 tracking-widest px-2">Seu Nome de Guerra</label>
-              <div className="relative group">
+              <div className="relative group animate-pulse-soft">
                 <input 
                   type="text" 
                   value={userName} 
                   onChange={e => setUserName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 cloud-shape-btn p-8 text-white font-black text-2xl placeholder:text-white/10 outline-none focus:border-orange-500 focus:bg-white/10 transition-all shadow-inner"
-                  placeholder="Identifique-se..."
+                  className="w-full bg-white/5 border border-white/10 cloud-shape-btn p-8 text-white font-black text-2xl placeholder:text-white/20 outline-none focus:border-orange-500 focus:bg-white/10 transition-all shadow-inner"
+                  placeholder={placeholder}
                 />
                 <UserCheck className="absolute right-8 top-1/2 -translate-y-1/2 text-white/10 group-focus-within:text-orange-500 transition-colors" size={32} />
               </div>
