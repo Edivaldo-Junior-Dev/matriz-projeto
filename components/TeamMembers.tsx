@@ -1,26 +1,36 @@
 
 import React, { useState, useEffect } from 'react';
 import { Team, Member, User } from '../types';
-import { Linkedin, Github, User as UserIcon, ArrowLeft, Quote, Briefcase, Mail, Edit2, Camera, X, Check, Save } from 'lucide-react';
+import { Linkedin, Github, User as UserIcon, ArrowLeft, Quote, Briefcase, Mail, Edit2, Camera, X, Check, Save, Cloud, Loader2 } from 'lucide-react';
 import { MEMBERS } from '../constants';
 
 interface TeamMembersProps {
   team: Team;
   onBack: () => void;
-  currentUser: User; // Necessário para verificar permissão
+  currentUser: User;
+  savedProfiles?: Member[];
+  onSaveProfile?: (member: Member) => Promise<void>;
 }
 
-const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack, currentUser }) => {
-  // Estado local para gerenciar os dados dos membros (permitindo edição em tempo real na interface)
+const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack, currentUser, savedProfiles = [], onSaveProfile }) => {
   const [membersData, setMembersData] = useState<Member[]>([]);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Inicializa os dados mesclando os nomes da equipe com os detalhes do arquivo de constantes
+  // Inicializa/Atualiza os dados combinando: Nomes da Equipe + Perfis Salvos na Nuvem + Defaults
   useEffect(() => {
     const enrichedMembers = team.members.map(memberName => {
-      const found = MEMBERS.find(m => m.name.toLowerCase() === memberName.toLowerCase());
-      return found || { 
-        id: `temp_${Math.random()}`, 
+      // 1. Tenta achar no Saved Profiles (Nuvem)
+      const saved = savedProfiles.find(p => p.name.toLowerCase() === memberName.toLowerCase());
+      if (saved) return { ...saved, name: memberName }; // Garante que o nome bate com o da equipe
+
+      // 2. Tenta achar nos Constants (Hardcoded)
+      const constant = MEMBERS.find(m => m.name.toLowerCase() === memberName.toLowerCase());
+      if (constant) return constant;
+
+      // 3. Fallback (Novo Membro)
+      return { 
+        id: memberName.toLowerCase().replace(/\s+/g, '_'), 
         name: memberName, 
         role: 'Membro da Equipe', 
         bio: 'Perfil ainda não configurado.',
@@ -30,20 +40,23 @@ const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack, currentUser }) 
       } as Member;
     });
     setMembersData(enrichedMembers);
-  }, [team]);
+  }, [team, savedProfiles]);
 
-  // Lógica de Permissão: Admin ou Membro da própria equipe
   const canEdit = currentUser.role === 'admin' || currentUser.teamNumber === team.teamNumber;
 
-  const handleSaveMember = () => {
-    if (!editingMember) return;
+  const handleSaveMember = async () => {
+    if (!editingMember || !onSaveProfile) return;
     
-    // Atualiza o estado local
-    setMembersData(prev => prev.map(m => m.name === editingMember.name ? editingMember : m));
-    setEditingMember(null);
-    
-    // OBS: Em uma aplicação real com backend, aqui faríamos um "await supabase.from('profiles').update(...)"
-    // Como estamos usando constantes para demo, a alteração persistirá apenas durante a sessão ou precisaria de uma tabela de perfis.
+    setIsSaving(true);
+    try {
+        await onSaveProfile(editingMember);
+        // O useEffect acima atualizará o membersData quando savedProfiles mudar no pai
+        setEditingMember(null);
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   return (
@@ -88,6 +101,13 @@ const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack, currentUser }) 
                  >
                     <Edit2 size={16} />
                  </button>
+             )}
+
+             {/* Cloud Indicator (Visual Aid) */}
+             {savedProfiles.some(p => p.name === member.name) && (
+                 <div className="absolute top-4 left-4 z-20 text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Salvo na Nuvem">
+                     <Cloud size={16} />
+                 </div>
              )}
 
              {/* Cover / Background decoration */}
@@ -197,7 +217,9 @@ const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack, currentUser }) 
                       <input 
                         value={editingMember.name} 
                         onChange={e => setEditingMember({...editingMember, name: e.target.value})}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                        disabled={true} // Nome é gerenciado pela Equipe
+                        title="O nome só pode ser alterado na configuração da equipe"
+                        className="w-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-sm dark:text-white focus:ring-0 outline-none opacity-70 cursor-not-allowed"
                       />
                   </div>
 
@@ -263,9 +285,11 @@ const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack, currentUser }) 
                  </button>
                  <button 
                     onClick={handleSaveMember}
+                    disabled={isSaving}
                     className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2"
                  >
-                    <Save size={18} /> Salvar Alterações
+                    {isSaving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18} />}
+                    {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                  </button>
               </div>
            </div>

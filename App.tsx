@@ -21,8 +21,11 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'ai'>('vote');
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   
-  // State para Equipes (agora dinâmico)
+  // State para Equipes
   const [teams, setTeams] = useState<Team[]>(DEFAULT_TEAMS);
+  
+  // State para Perfis (Cloud)
+  const [savedProfiles, setSavedProfiles] = useState<Member[]>([]);
   
   const [votes, setVotes] = useState<VotesState>(INITIAL_VOTES);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -33,7 +36,6 @@ const App: React.FC = () => {
     if (!err) return "Erro desconhecido";
     if (typeof err === 'string') return err;
     const msg = err.message || JSON.stringify(err);
-    // Detecta erros comuns de rede do Supabase/Browser
     if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network') || msg.toLowerCase().includes('typeerror')) {
         return "Erro de Conexão (Internet ou Bloqueio de Rede)";
     }
@@ -65,12 +67,65 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Fetch Teams from Supabase
+  // Fetch Profiles (Fotos, Bios, Links)
+  const fetchProfiles = useCallback(async () => {
+    try {
+      // Tenta buscar da tabela 'profiles'. Se não existir, vai falhar silenciosamente ou retornar erro.
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (!error && data) {
+        const mappedProfiles: Member[] = data.map((p: any) => ({
+           id: p.id,
+           name: p.name,
+           role: p.role,
+           bio: p.bio,
+           photoUrl: p.photo_url,
+           linkedin: p.linkedin,
+           github: p.github
+        }));
+        setSavedProfiles(mappedProfiles);
+      }
+    } catch (e) {
+      console.log("Tabela profiles possivelmente inexistente ou erro de conexão.", e);
+    }
+  }, []);
+
+  // Save Profile to Cloud
+  const handleSaveProfile = async (member: Member) => {
+    // 1. Atualização Otimista
+    setSavedProfiles(prev => {
+        // Remove versão anterior se existir e adiciona a nova
+        const filtered = prev.filter(p => p.name !== member.name);
+        return [...filtered, member];
+    });
+
+    try {
+        const payload = {
+            id: member.id || member.name.toLowerCase().replace(/\s+/g, '_'),
+            name: member.name,
+            role: member.role,
+            bio: member.bio,
+            photo_url: member.photoUrl,
+            linkedin: member.linkedin,
+            github: member.github
+        };
+
+        const { error } = await supabase.from('profiles').upsert(payload);
+        
+        if (error) {
+            console.error("Erro ao salvar perfil:", error);
+            alert("Atenção: Os dados foram atualizados na tela, mas houve um erro ao salvar na nuvem (verifique se a tabela 'profiles' existe no Supabase). " + error.message);
+        }
+    } catch (e: any) {
+        console.error("Erro de conexão ao salvar perfil:", e);
+        alert("Modo Offline: Perfil atualizado localmente.");
+    }
+  };
+
+  // Fetch Teams
   const fetchTeams = useCallback(async () => {
     try {
       const { data, error } = await supabase.from('teams').select('*').order('team_number', { ascending: true });
       if (!error && data && data.length > 0) {
-        // Mapear dados do banco (snake_case) para o modelo da aplicação (camelCase/Nested)
         const dbTeams: Team[] = data.map((t: any) => ({
           id: t.id,
           teamNumber: t.team_number,
@@ -83,7 +138,6 @@ const App: React.FC = () => {
           }
         }));
         
-        // Mesclar com os defaults para garantir que todas as 6 equipes existam visualmente
         const mergedTeams = DEFAULT_TEAMS.map(defTeam => {
           const found = dbTeams.find(d => d.teamNumber === defTeam.teamNumber);
           return found ? found : defTeam;
@@ -96,13 +150,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Save Team to Supabase
+  // Save Team
   const handleSaveTeam = async (updatedTeam: Team) => {
-    // 1. Atualização Otimista (Interface atualiza instantaneamente)
     setTeams(prev => prev.map(t => t.id === updatedTeam.id ? updatedTeam : t));
 
     try {
-      // Prepara payload flat para o Supabase
       const fullPayload = {
         id: updatedTeam.id,
         team_number: updatedTeam.teamNumber,
@@ -116,19 +168,10 @@ const App: React.FC = () => {
       const { error } = await supabase.from('teams').upsert(fullPayload);
       
       if (error) {
-        // Tratamento para erro de coluna 'members' inexistente
         const errorString = JSON.stringify(error).toLowerCase();
-        
-        if (
-            errorString.includes('members') && 
-            (errorString.includes('column') || errorString.includes('schema') || errorString.includes('exist'))
-           ) {
-             // Tenta salvar SEM o campo members (fallback)
+        if (errorString.includes('members') && (errorString.includes('column') || errorString.includes('schema'))) {
              const { members, ...partialPayload } = fullPayload;
-             const { error: retryError } = await supabase.from('teams').upsert(partialPayload);
-             
-             if (retryError) throw retryError;
-             
+             await supabase.from('teams').upsert(partialPayload);
              alert("Aviso: Detalhes do projeto salvos, mas os integrantes não puderam ser sincronizados (coluna ausente no banco).");
              return; 
         }
@@ -137,28 +180,23 @@ const App: React.FC = () => {
     } catch (e: any) {
       console.error("Erro ao salvar:", e);
       const msg = stringifyError(e);
-      
-      // Tratamento Específico para Erro de Conexão (Failed to fetch)
-      // Mantemos a alteração local (não chamamos fetchTeams para reverter) e avisamos o usuário
       if (msg.includes('Conexão') || msg.includes('fetch') || msg.includes('network')) {
           setSyncStatus('offline');
           setErrorMessage('Modo Offline Ativo');
-          alert("MODO OFFLINE: Suas alterações foram salvas localmente neste dispositivo porque não foi possível conectar ao servidor.\n\nElas serão perdidas se você recarregar a página antes de conectar.");
-          return; // Retorna sucesso (para fechar o modal) mesmo estando offline
+          alert("MODO OFFLINE: Alterações salvas localmente.");
+          return;
       }
-
-      // Outros erros (Lógica, Permissão, etc) -> Reverte
       alert(`Falha ao salvar na nuvem: ${msg}`);
-      fetchTeams(); // Reverte atualização otimista
-      throw e; // Propaga erro para manter modal aberto
+      fetchTeams();
+      throw e;
     }
   };
 
   useEffect(() => {
     fetchVotes();
     fetchTeams();
+    fetchProfiles();
 
-    // Realtime subscriptions
     const votesChannel = supabase.channel('votes-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, () => fetchVotes())
       .subscribe();
@@ -166,12 +204,18 @@ const App: React.FC = () => {
     const teamsChannel = supabase.channel('teams-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => fetchTeams())
       .subscribe();
+    
+    // Opcional: ouvir mudanças em profiles
+    const profilesChannel = supabase.channel('profiles-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchProfiles())
+      .subscribe();
 
     return () => { 
       supabase.removeChannel(votesChannel);
       supabase.removeChannel(teamsChannel);
+      supabase.removeChannel(profilesChannel);
     };
-  }, [fetchVotes, fetchTeams]);
+  }, [fetchVotes, fetchTeams, fetchProfiles]);
 
   useEffect(() => {
     localStorage.setItem('matrix_user', JSON.stringify(currentUser));
@@ -252,7 +296,13 @@ const App: React.FC = () => {
         )}
         
         {view === 'members' && selectedTeam && (
-          <TeamMembers team={selectedTeam} onBack={handleGoBack} currentUser={currentUser} />
+          <TeamMembers 
+            team={selectedTeam} 
+            onBack={handleGoBack} 
+            currentUser={currentUser} 
+            savedProfiles={savedProfiles}
+            onSaveProfile={handleSaveProfile}
+          />
         )}
 
         {view === 'matrix' && (
