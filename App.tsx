@@ -8,6 +8,7 @@ import ResultsMatrix from './components/ResultsMatrix';
 import AIChatPanel from './components/AIChatPanel';
 import LoginPanel from './components/LoginPanel';
 import TeamDashboard from './components/TeamDashboard';
+import TeamMembers from './components/TeamMembers';
 import { Moon, Sun, BarChart3, LogOut, Layers, ChevronLeft, Cloud } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -16,7 +17,7 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [view, setView] = useState<'dashboard' | 'matrix'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'matrix' | 'members'>('dashboard');
   const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'ai'>('vote');
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   
@@ -31,8 +32,12 @@ const App: React.FC = () => {
   const stringifyError = (err: any): string => {
     if (!err) return "Erro desconhecido";
     if (typeof err === 'string') return err;
-    if (err instanceof TypeError && err.message?.includes('fetch')) return "Falha de conexão";
-    return err.message || JSON.stringify(err);
+    const msg = err.message || JSON.stringify(err);
+    // Detecta erros comuns de rede do Supabase/Browser
+    if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network') || msg.toLowerCase().includes('typeerror')) {
+        return "Erro de Conexão (Internet ou Bloqueio de Rede)";
+    }
+    return msg;
   };
 
   // Fetch Votes
@@ -93,7 +98,7 @@ const App: React.FC = () => {
 
   // Save Team to Supabase
   const handleSaveTeam = async (updatedTeam: Team) => {
-    // Atualização Otimista
+    // 1. Atualização Otimista (Interface atualiza instantaneamente)
     setTeams(prev => prev.map(t => t.id === updatedTeam.id ? updatedTeam : t));
 
     try {
@@ -111,8 +116,7 @@ const App: React.FC = () => {
       const { error } = await supabase.from('teams').upsert(fullPayload);
       
       if (error) {
-        // Tratamento mais robusto para erro de coluna 'members' inexistente
-        // Verifica mensagem, detalhes ou código se possível
+        // Tratamento para erro de coluna 'members' inexistente
         const errorString = JSON.stringify(error).toLowerCase();
         
         if (
@@ -125,7 +129,7 @@ const App: React.FC = () => {
              
              if (retryError) throw retryError;
              
-             console.warn("Aviso: Integrantes não sincronizados (coluna 'members' ausente). Projeto salvo.");
+             alert("Aviso: Detalhes do projeto salvos, mas os integrantes não puderam ser sincronizados (coluna ausente no banco).");
              return; 
         }
         throw error;
@@ -133,8 +137,18 @@ const App: React.FC = () => {
     } catch (e: any) {
       console.error("Erro ao salvar:", e);
       const msg = stringifyError(e);
-      alert(`Falha ao salvar na nuvem: ${msg}`);
       
+      // Tratamento Específico para Erro de Conexão (Failed to fetch)
+      // Mantemos a alteração local (não chamamos fetchTeams para reverter) e avisamos o usuário
+      if (msg.includes('Conexão') || msg.includes('fetch') || msg.includes('network')) {
+          setSyncStatus('offline');
+          setErrorMessage('Modo Offline Ativo');
+          alert("MODO OFFLINE: Suas alterações foram salvas localmente neste dispositivo porque não foi possível conectar ao servidor.\n\nElas serão perdidas se você recarregar a página antes de conectar.");
+          return; // Retorna sucesso (para fechar o modal) mesmo estando offline
+      }
+
+      // Outros erros (Lógica, Permissão, etc) -> Reverte
+      alert(`Falha ao salvar na nuvem: ${msg}`);
       fetchTeams(); // Reverte atualização otimista
       throw e; // Propaga erro para manter modal aberto
     }
@@ -188,6 +202,11 @@ const App: React.FC = () => {
     setSelectedTeam(null);
   };
 
+  const handleViewMembers = (team: Team) => {
+    setSelectedTeam(team);
+    setView('members');
+  };
+
   if (!currentUser) return <LoginPanel onLogin={setCurrentUser} />;
 
   return (
@@ -199,7 +218,7 @@ const App: React.FC = () => {
             <div>
               <h1 className="text-lg font-black dark:text-white leading-none tracking-tighter">Matriz<span className="text-orange-500">Cognis</span></h1>
               <p className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-widest flex items-center gap-2">
-                {syncStatus === 'online' ? <span className="text-emerald-500">● ONLINE</span> : <span className="text-red-500">● {syncStatus.toUpperCase()}</span>}
+                {syncStatus === 'online' ? <span className="text-emerald-500">● ONLINE</span> : <span className="text-red-500">● {syncStatus.toUpperCase()} ({errorMessage || 'Desconectado'})</span>}
               </p>
             </div>
           </div>
@@ -222,14 +241,21 @@ const App: React.FC = () => {
         </div>
       </header>
       <main className="container mx-auto px-4 py-8 flex-1">
-        {view === 'dashboard' ? (
+        {view === 'dashboard' && (
           <TeamDashboard 
             teams={teams} 
             onSaveTeam={handleSaveTeam} 
             onEnterMatrix={(t) => { setSelectedTeam(t); setView('matrix'); }} 
+            onViewMembers={handleViewMembers}
             currentUser={currentUser} 
           />
-        ) : (
+        )}
+        
+        {view === 'members' && selectedTeam && (
+          <TeamMembers team={selectedTeam} onBack={handleGoBack} />
+        )}
+
+        {view === 'matrix' && (
           <div className="space-y-6">
             <div className="flex justify-start">
                <button 

@@ -23,6 +23,11 @@ export interface Proposal {
 export interface Member {
   id: string;
   name: string;
+  role?: string;     // Novo: Cargo na equipe (ex: Tech Lead)
+  photoUrl?: string; // Novo: URL da foto
+  linkedin?: string; // Novo: Link do LinkedIn
+  github?: string;   // Novo: Link do Github
+  bio?: string;      // Novo: Pequena descrição
 }
 
 export type Score = 1 | 2 | 3 | 4 | 5 | 0;

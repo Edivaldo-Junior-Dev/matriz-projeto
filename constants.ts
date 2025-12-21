@@ -4,12 +4,55 @@ import { Member, Proposal, VotesState, Team } from './types';
 export const CORE_TEAM_IDS = ['edivaldo', 'cynthia', 'naiara', 'emanuel', 'fabiano', 'gabriel'];
 
 export const MEMBERS: Member[] = [
-  { id: 'edivaldo', name: 'Edivaldo Junior' },
-  { id: 'cynthia', name: 'Cynthia Borelli' },
-  { id: 'naiara', name: 'Naiara Oliveira' },
-  { id: 'emanuel', name: 'Emanuel Heráclio' },
-  { id: 'fabiano', name: 'Fabiano Santana' },
-  { id: 'gabriel', name: 'Gabriel Araujo' },
+  { 
+    id: 'edivaldo', 
+    name: 'Edivaldo Junior', 
+    role: 'Tech Lead & Fullstack', 
+    photoUrl: 'https://github.com/edivaldojuniordev.png',
+    linkedin: 'https://linkedin.com/in/edivaldojuniordev',
+    github: 'https://github.com/edivaldojuniordev',
+    bio: 'Desenvolvedor focado em arquitetura de software e soluções em nuvem. Lidera a implementação técnica do Portfólio CloudDev.'
+  },
+  { 
+    id: 'cynthia', 
+    name: 'Cynthia Borelli', 
+    role: 'Product Owner & UX',
+    photoUrl: 'https://ui-avatars.com/api/?name=Cynthia+Borelli&background=F97316&color=fff',
+    linkedin: '#',
+    bio: 'Especialista em visão de produto e experiência do usuário. Garante que as entregas gerem valor real para o cliente.'
+  },
+  { 
+    id: 'naiara', 
+    name: 'Naiara Oliveira', 
+    role: 'Scrum Master',
+    photoUrl: 'https://ui-avatars.com/api/?name=Naiara+Oliveira&background=8B5CF6&color=fff',
+    linkedin: '#',
+    bio: 'Facilitadora ágil, remove impedimentos e garante que o time siga as cerimônias e boas práticas do Scrum.'
+  },
+  { 
+    id: 'emanuel', 
+    name: 'Emanuel Heráclio', 
+    role: 'Cloud Architect',
+    photoUrl: 'https://ui-avatars.com/api/?name=Emanuel+Heraclio&background=10B981&color=fff',
+    linkedin: '#',
+    bio: 'Focado em infraestrutura e serviços AWS. Desenha a arquitetura escalável para suportar as aplicações.'
+  },
+  { 
+    id: 'fabiano', 
+    name: 'Fabiano Santana', 
+    role: 'Backend Developer',
+    photoUrl: 'https://ui-avatars.com/api/?name=Fabiano+Santana&background=3B82F6&color=fff',
+    linkedin: '#',
+    bio: 'Especialista em APIs e banco de dados. Garante a integridade e segurança dos dados no Supabase.'
+  },
+  { 
+    id: 'gabriel', 
+    name: 'Gabriel Araujo', 
+    role: 'Frontend Developer',
+    photoUrl: 'https://ui-avatars.com/api/?name=Gabriel+Araujo&background=EC4899&color=fff',
+    linkedin: '#',
+    bio: 'Desenvolvedor de interfaces, focado em criar experiências responsivas e animações fluidas.'
+  },
 ];
 
 export const PROPOSALS: Proposal[] = [

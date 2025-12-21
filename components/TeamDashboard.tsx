@@ -1,16 +1,17 @@
 
 import React, { useState } from 'react';
 import { Team, User } from '../types';
-import { Edit3, Users, Briefcase, BarChart3, Check, Loader2 } from 'lucide-react';
+import { Edit3, Users, Briefcase, BarChart3, Check, Loader2, ArrowRight } from 'lucide-react';
 
 interface TeamDashboardProps {
   teams: Team[];
   onSaveTeam: (team: Team) => Promise<void>;
   onEnterMatrix: (team: Team) => void;
+  onViewMembers?: (team: Team) => void; // Nova prop opcional
   currentUser: User;
 }
 
-const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onSaveTeam, onEnterMatrix, currentUser }) => {
+const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onSaveTeam, onEnterMatrix, onViewMembers, currentUser }) => {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Team | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -30,9 +31,9 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onSaveTeam, onEnte
       setIsSaving(true);
       try {
         await onSaveTeam(editForm);
-        setEditingTeamId(null); // Só fecha se sucesso
+        setEditingTeamId(null); 
       } catch (error) {
-        // Erro já tratado no nível superior (App.tsx)
+        // Erro já tratado no nível superior
       } finally {
         setIsSaving(false);
       }
@@ -94,7 +95,17 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onSaveTeam, onEnte
             </div>
 
             {/* Footer Card Actions */}
-            <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 flex gap-2">
+            <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col gap-2">
+               {/* Botão para ver integrantes (NOVO) */}
+               {onViewMembers && (
+                 <button 
+                    onClick={() => onViewMembers(team)}
+                    className="w-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all mb-2"
+                 >
+                   <Users size={16} /> CONHECER O TIME
+                 </button>
+               )}
+
                <button 
                   onClick={() => onEnterMatrix(team)}
                   className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-4 cloud-shape-button text-xs font-black flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg"
