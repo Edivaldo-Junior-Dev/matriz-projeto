@@ -1,21 +1,50 @@
 
-import React from 'react';
-import { Team, Member } from '../types';
-import { Linkedin, Github, User, ArrowLeft, Quote, Briefcase, Mail } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Team, Member, User } from '../types';
+import { Linkedin, Github, User as UserIcon, ArrowLeft, Quote, Briefcase, Mail, Edit2, Camera, X, Check, Save } from 'lucide-react';
 import { MEMBERS } from '../constants';
 
 interface TeamMembersProps {
   team: Team;
   onBack: () => void;
+  currentUser: User; // Necessário para verificar permissão
 }
 
-const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack }) => {
-  // Filter global members list to find full details for current team members
-  // Matching by Name string since Team only stores member names
-  const teamMembersDetails = team.members.map(memberName => {
-    const found = MEMBERS.find(m => m.name.toLowerCase() === memberName.toLowerCase());
-    return found || { id: 'unknown', name: memberName, role: 'Membro da Equipe', bio: 'Perfil ainda não configurado.' } as Member;
-  });
+const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack, currentUser }) => {
+  // Estado local para gerenciar os dados dos membros (permitindo edição em tempo real na interface)
+  const [membersData, setMembersData] = useState<Member[]>([]);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+
+  // Inicializa os dados mesclando os nomes da equipe com os detalhes do arquivo de constantes
+  useEffect(() => {
+    const enrichedMembers = team.members.map(memberName => {
+      const found = MEMBERS.find(m => m.name.toLowerCase() === memberName.toLowerCase());
+      return found || { 
+        id: `temp_${Math.random()}`, 
+        name: memberName, 
+        role: 'Membro da Equipe', 
+        bio: 'Perfil ainda não configurado.',
+        photoUrl: '',
+        linkedin: '',
+        github: ''
+      } as Member;
+    });
+    setMembersData(enrichedMembers);
+  }, [team]);
+
+  // Lógica de Permissão: Admin ou Membro da própria equipe
+  const canEdit = currentUser.role === 'admin' || currentUser.teamNumber === team.teamNumber;
+
+  const handleSaveMember = () => {
+    if (!editingMember) return;
+    
+    // Atualiza o estado local
+    setMembersData(prev => prev.map(m => m.name === editingMember.name ? editingMember : m));
+    setEditingMember(null);
+    
+    // OBS: Em uma aplicação real com backend, aqui faríamos um "await supabase.from('profiles').update(...)"
+    // Como estamos usando constantes para demo, a alteração persistirá apenas durante a sessão ou precisaria de uma tabela de perfis.
+  };
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
@@ -36,15 +65,31 @@ const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack }) => {
                Conheça os talentos por trás do projeto <strong>{team.project.name}</strong>
              </p>
          </div>
+         {canEdit && (
+             <div className="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full flex items-center gap-2 border border-emerald-200 dark:border-emerald-800">
+                 <Edit2 size={12} /> MODO DE EDIÇÃO ATIVO
+             </div>
+         )}
       </div>
 
       {/* Members Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {teamMembersDetails.map((member, idx) => (
+        {membersData.map((member, idx) => (
           <div 
             key={idx}
             className="group relative bg-white dark:bg-slate-900 cloud-shape-discreet border border-slate-200 dark:border-slate-800 shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden flex flex-col"
           >
+             {/* Edit Button (Only visible if permitted) */}
+             {canEdit && (
+                 <button 
+                    onClick={() => setEditingMember(member)}
+                    className="absolute top-4 right-4 z-20 p-2 bg-white/90 dark:bg-slate-800/90 text-slate-500 hover:text-orange-500 rounded-full shadow-sm hover:scale-110 transition-all opacity-0 group-hover:opacity-100"
+                    title="Editar Perfil"
+                 >
+                    <Edit2 size={16} />
+                 </button>
+             )}
+
              {/* Cover / Background decoration */}
              <div className="h-24 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
@@ -66,7 +111,7 @@ const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack }) => {
                      />
                    ) : (
                      <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-2 border-slate-200 dark:border-slate-700 text-slate-400">
-                        <User size={40} />
+                        <UserIcon size={40} />
                      </div>
                    )}
                 </div>
@@ -79,14 +124,14 @@ const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack }) => {
                 <div className="flex items-center justify-center gap-2 mb-4">
                    <span className="px-3 py-1 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-300 text-[10px] font-bold uppercase tracking-wider rounded-full flex items-center gap-1">
                       <Briefcase size={10} />
-                      {member.role || 'Membro'}
+                      {member.role || 'Membro da Equipe'}
                    </span>
                 </div>
 
                 <div className="relative mb-6 flex-1">
                    <Quote size={20} className="absolute -top-2 left-0 text-slate-200 dark:text-slate-700 opacity-50" />
                    <p className="text-sm text-slate-600 dark:text-slate-400 italic px-4 leading-relaxed">
-                      "{member.bio || 'Membro dedicado da equipe, contribuindo para o sucesso do projeto.'}"
+                      "{member.bio || 'Membro dedicado da equipe.'}"
                    </p>
                 </div>
 
@@ -110,13 +155,122 @@ const TeamMembers: React.FC<TeamMembersProps> = ({ team, onBack }) => {
           </div>
         ))}
         
-        {teamMembersDetails.length === 0 && (
+        {membersData.length === 0 && (
            <div className="col-span-full py-12 text-center text-slate-400">
-              <User size={48} className="mx-auto mb-4 opacity-20" />
+              <UserIcon size={48} className="mx-auto mb-4 opacity-20" />
               <p>Nenhum membro cadastrado nesta equipe ainda.</p>
            </div>
         )}
       </div>
+
+      {/* MODAL DE EDIÇÃO */}
+      {editingMember && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+           <div className="bg-white dark:bg-slate-900 w-full max-w-lg cloud-shape-discreet shadow-2xl overflow-hidden animate-fade-in-up border border-slate-200 dark:border-slate-700">
+              <div className="bg-orange-500 p-4 text-white flex justify-between items-center">
+                 <h3 className="text-lg font-black flex items-center gap-2"><Edit2 size={18}/> Editar Perfil</h3>
+                 <button onClick={() => setEditingMember(null)} className="text-white/80 hover:text-white transition-colors">
+                    <X size={20} />
+                 </button>
+              </div>
+              
+              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                  
+                  {/* Foto Preview */}
+                  <div className="flex justify-center mb-6">
+                      <div className="relative">
+                          {editingMember.photoUrl ? (
+                              <img src={editingMember.photoUrl} alt="Preview" className="w-24 h-24 rounded-full object-cover border-4 border-slate-100 dark:border-slate-800 shadow-lg" />
+                          ) : (
+                              <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center border-4 border-slate-100 dark:border-slate-700">
+                                  <UserIcon size={40} className="text-slate-400"/>
+                              </div>
+                          )}
+                          <div className="absolute bottom-0 right-0 bg-orange-500 text-white p-1.5 rounded-full shadow-md">
+                              <Camera size={14} />
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="space-y-1">
+                      <label className="text-xs font-bold uppercase text-slate-400">Nome Completo</label>
+                      <input 
+                        value={editingMember.name} 
+                        onChange={e => setEditingMember({...editingMember, name: e.target.value})}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                      />
+                  </div>
+
+                  <div className="space-y-1">
+                      <label className="text-xs font-bold uppercase text-slate-400">Cargo / Função</label>
+                      <input 
+                        value={editingMember.role || ''} 
+                        onChange={e => setEditingMember({...editingMember, role: e.target.value})}
+                        placeholder="Ex: Fullstack Developer"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                      />
+                  </div>
+
+                  <div className="space-y-1">
+                      <label className="text-xs font-bold uppercase text-slate-400">URL da Foto</label>
+                      <input 
+                        value={editingMember.photoUrl || ''} 
+                        onChange={e => setEditingMember({...editingMember, photoUrl: e.target.value})}
+                        placeholder="https://github.com/seunome.png"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                      />
+                      <p className="text-[10px] text-slate-400">Dica: Use "https://github.com/SEU_USUARIO.png" para foto do GitHub.</p>
+                  </div>
+
+                  <div className="space-y-1">
+                      <label className="text-xs font-bold uppercase text-slate-400">Mini Bio</label>
+                      <textarea 
+                        value={editingMember.bio || ''} 
+                        onChange={e => setEditingMember({...editingMember, bio: e.target.value})}
+                        rows={3}
+                        placeholder="Conte um pouco sobre sua função no projeto..."
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+                      />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                          <label className="text-xs font-bold uppercase text-slate-400 flex items-center gap-1"><Linkedin size={10}/> LinkedIn URL</label>
+                          <input 
+                            value={editingMember.linkedin || ''} 
+                            onChange={e => setEditingMember({...editingMember, linkedin: e.target.value})}
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                          />
+                      </div>
+                      <div className="space-y-1">
+                          <label className="text-xs font-bold uppercase text-slate-400 flex items-center gap-1"><Github size={10}/> GitHub URL</label>
+                          <input 
+                            value={editingMember.github || ''} 
+                            onChange={e => setEditingMember({...editingMember, github: e.target.value})}
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg text-sm dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                          />
+                      </div>
+                  </div>
+
+              </div>
+
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex gap-3">
+                 <button 
+                    onClick={() => setEditingMember(null)}
+                    className="flex-1 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-white font-bold rounded-xl transition-colors"
+                 >
+                    Cancelar
+                 </button>
+                 <button 
+                    onClick={handleSaveMember}
+                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2"
+                 >
+                    <Save size={18} /> Salvar Alterações
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

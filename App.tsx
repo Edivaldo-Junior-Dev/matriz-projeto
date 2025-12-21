@@ -252,7 +252,7 @@ const App: React.FC = () => {
         )}
         
         {view === 'members' && selectedTeam && (
-          <TeamMembers team={selectedTeam} onBack={handleGoBack} />
+          <TeamMembers team={selectedTeam} onBack={handleGoBack} currentUser={currentUser} />
         )}
 
         {view === 'matrix' && (
