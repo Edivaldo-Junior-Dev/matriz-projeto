@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { INITIAL_VOTES, MEMBERS as DEFAULT_MEMBERS, PROPOSALS as DEFAULT_PROPOSALS, CORE_TEAM_IDS, TEAMS } from './constants';
+import { INITIAL_VOTES, MEMBERS as DEFAULT_MEMBERS, PROPOSALS as DEFAULT_PROPOSALS, CORE_TEAM_IDS, TEAMS as DEFAULT_TEAMS } from './constants';
 import { Score, VotesState, Member, Proposal, User, Team } from './types';
 import { supabase } from './lib/supabase';
 import VotingForm from './components/VotingForm';
@@ -19,6 +19,10 @@ const App: React.FC = () => {
   const [view, setView] = useState<'dashboard' | 'matrix'>('dashboard');
   const [activeTab, setActiveTab] = useState<'vote' | 'results' | 'ai'>('vote');
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  
+  // State para Equipes (agora dinâmico)
+  const [teams, setTeams] = useState<Team[]>(DEFAULT_TEAMS);
+  
   const [votes, setVotes] = useState<VotesState>(INITIAL_VOTES);
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
   const [syncStatus, setSyncStatus] = useState<'online' | 'offline' | 'error'>('online');
@@ -26,10 +30,12 @@ const App: React.FC = () => {
 
   const stringifyError = (err: any): string => {
     if (!err) return "Erro desconhecido";
-    if (err instanceof TypeError && err.message.includes('fetch')) return "Falha de conexão";
+    if (typeof err === 'string') return err;
+    if (err instanceof TypeError && err.message?.includes('fetch')) return "Falha de conexão";
     return err.message || JSON.stringify(err);
   };
 
+  // Fetch Votes
   const fetchVotes = useCallback(async () => {
     try {
       const { data, error } = await supabase.from('votes').select('*');
@@ -54,13 +60,104 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Fetch Teams from Supabase
+  const fetchTeams = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('teams').select('*').order('team_number', { ascending: true });
+      if (!error && data && data.length > 0) {
+        // Mapear dados do banco (snake_case) para o modelo da aplicação (camelCase/Nested)
+        const dbTeams: Team[] = data.map((t: any) => ({
+          id: t.id,
+          teamNumber: t.team_number,
+          name: t.name,
+          members: t.members || [],
+          project: {
+            name: t.project_name || 'Aguardando Definição',
+            description: t.project_description || 'Nenhum projeto registrado.',
+            link: t.project_link || ''
+          }
+        }));
+        
+        // Mesclar com os defaults para garantir que todas as 6 equipes existam visualmente
+        const mergedTeams = DEFAULT_TEAMS.map(defTeam => {
+          const found = dbTeams.find(d => d.teamNumber === defTeam.teamNumber);
+          return found ? found : defTeam;
+        });
+        
+        setTeams(mergedTeams);
+      }
+    } catch (e) {
+      console.error("Erro ao buscar equipes:", e);
+    }
+  }, []);
+
+  // Save Team to Supabase
+  const handleSaveTeam = async (updatedTeam: Team) => {
+    // Atualização Otimista
+    setTeams(prev => prev.map(t => t.id === updatedTeam.id ? updatedTeam : t));
+
+    try {
+      // Prepara payload flat para o Supabase
+      const fullPayload = {
+        id: updatedTeam.id,
+        team_number: updatedTeam.teamNumber,
+        name: updatedTeam.name,
+        members: updatedTeam.members,
+        project_name: updatedTeam.project.name,
+        project_description: updatedTeam.project.description,
+        project_link: updatedTeam.project.link
+      };
+
+      const { error } = await supabase.from('teams').upsert(fullPayload);
+      
+      if (error) {
+        // Tratamento mais robusto para erro de coluna 'members' inexistente
+        // Verifica mensagem, detalhes ou código se possível
+        const errorString = JSON.stringify(error).toLowerCase();
+        
+        if (
+            errorString.includes('members') && 
+            (errorString.includes('column') || errorString.includes('schema') || errorString.includes('exist'))
+           ) {
+             // Tenta salvar SEM o campo members (fallback)
+             const { members, ...partialPayload } = fullPayload;
+             const { error: retryError } = await supabase.from('teams').upsert(partialPayload);
+             
+             if (retryError) throw retryError;
+             
+             console.warn("Aviso: Integrantes não sincronizados (coluna 'members' ausente). Projeto salvo.");
+             return; 
+        }
+        throw error;
+      }
+    } catch (e: any) {
+      console.error("Erro ao salvar:", e);
+      const msg = stringifyError(e);
+      alert(`Falha ao salvar na nuvem: ${msg}`);
+      
+      fetchTeams(); // Reverte atualização otimista
+      throw e; // Propaga erro para manter modal aberto
+    }
+  };
+
   useEffect(() => {
     fetchVotes();
-    const channel = supabase.channel('schema-db-changes')
+    fetchTeams();
+
+    // Realtime subscriptions
+    const votesChannel = supabase.channel('votes-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, () => fetchVotes())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchVotes]);
+
+    const teamsChannel = supabase.channel('teams-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, () => fetchTeams())
+      .subscribe();
+
+    return () => { 
+      supabase.removeChannel(votesChannel);
+      supabase.removeChannel(teamsChannel);
+    };
+  }, [fetchVotes, fetchTeams]);
 
   useEffect(() => {
     localStorage.setItem('matrix_user', JSON.stringify(currentUser));
@@ -126,10 +223,14 @@ const App: React.FC = () => {
       </header>
       <main className="container mx-auto px-4 py-8 flex-1">
         {view === 'dashboard' ? (
-          <TeamDashboard teams={TEAMS} onUpdateTeams={() => {}} onEnterMatrix={(t) => { setSelectedTeam(t); setView('matrix'); }} currentUser={currentUser} />
+          <TeamDashboard 
+            teams={teams} 
+            onSaveTeam={handleSaveTeam} 
+            onEnterMatrix={(t) => { setSelectedTeam(t); setView('matrix'); }} 
+            currentUser={currentUser} 
+          />
         ) : (
           <div className="space-y-6">
-            {/* BOTÃO VOLTAR NO TOPO DA ÁREA DE CONTEÚDO (CONFORME IMAGEM) */}
             <div className="flex justify-start">
                <button 
                 onClick={handleGoBack}

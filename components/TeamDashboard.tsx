@@ -1,18 +1,19 @@
 
 import React, { useState } from 'react';
 import { Team, User } from '../types';
-import { Edit3, Users, Briefcase, BarChart3, Check } from 'lucide-react';
+import { Edit3, Users, Briefcase, BarChart3, Check, Loader2 } from 'lucide-react';
 
 interface TeamDashboardProps {
   teams: Team[];
-  onUpdateTeams: (teams: Team[]) => void;
+  onSaveTeam: (team: Team) => Promise<void>;
   onEnterMatrix: (team: Team) => void;
   currentUser: User;
 }
 
-const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onEnterMatrix, currentUser }) => {
+const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onSaveTeam, onEnterMatrix, currentUser }) => {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Team | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const canEdit = (teamNumber: number) => {
     return currentUser.role === 'admin' || currentUser.teamNumber === teamNumber;
@@ -24,11 +25,18 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onE
     setEditForm({ ...team });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editForm) {
-      onUpdateTeams(teams.map(t => t.id === editForm.id ? editForm : t));
+      setIsSaving(true);
+      try {
+        await onSaveTeam(editForm);
+        setEditingTeamId(null); // Só fecha se sucesso
+      } catch (error) {
+        // Erro já tratado no nível superior (App.tsx)
+      } finally {
+        setIsSaving(false);
+      }
     }
-    setEditingTeamId(null);
   };
 
   return (
@@ -134,8 +142,13 @@ const TeamDashboard: React.FC<TeamDashboardProps> = ({ teams, onUpdateTeams, onE
                  </div>
               </div>
               <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                 <button onClick={handleSave} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 cloud-shape-button shadow-lg transition-all flex items-center justify-center gap-2">
-                    <Check size={20} /> SALVAR ALTERAÇÕES
+                 <button 
+                  onClick={handleSave} 
+                  disabled={isSaving}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-black py-4 cloud-shape-button shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                    {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
+                    {isSaving ? 'SALVANDO NA NUVEM...' : 'SALVAR ALTERAÇÕES'}
                  </button>
               </div>
            </div>
