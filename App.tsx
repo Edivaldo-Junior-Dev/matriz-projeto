@@ -112,8 +112,10 @@ const App: React.FC = () => {
         const { error } = await supabase.from('profiles').upsert(payload);
         
         if (error) {
-            console.error("Erro ao salvar perfil:", error);
-            alert("Atenção: Os dados foram atualizados na tela, mas houve um erro ao salvar na nuvem (verifique se a tabela 'profiles' existe no Supabase). " + error.message);
+            console.error("Erro ao salvar perfil (Supabase):", error);
+            // Correção para evitar [object Object]
+            const errorText = error.message || JSON.stringify(error, null, 2);
+            alert(`Atenção: Os dados foram atualizados na tela, mas houve um erro ao salvar na nuvem.\n\nDetalhe do erro: ${errorText}\n\nVerifique se a tabela 'profiles' foi criada no Supabase.`);
         }
     } catch (e: any) {
         console.error("Erro de conexão ao salvar perfil:", e);
