@@ -8,7 +8,7 @@ import ResultsMatrix from './components/ResultsMatrix';
 import AIChatPanel from './components/AIChatPanel';
 import LoginPanel from './components/LoginPanel';
 import TeamDashboard from './components/TeamDashboard';
-import { Moon, Sun, BarChart3, LogOut, Layers, ChevronLeft, Upload, AlertCircle, CheckCircle, RefreshCw, Cloud } from 'lucide-react';
+import { Moon, Sun, BarChart3, LogOut, Layers, ChevronLeft, Cloud } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -86,6 +86,11 @@ const App: React.FC = () => {
     } catch (e) { console.error(e); }
   };
 
+  const handleGoBack = () => {
+    setView('dashboard');
+    setSelectedTeam(null);
+  };
+
   if (!currentUser) return <LoginPanel onLogin={setCurrentUser} />;
 
   return (
@@ -95,13 +100,21 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="bg-orange-500 text-white p-2 rounded-xl shadow-lg shadow-orange-500/20"><Layers size={20} /></div>
             <div>
-              <h1 className="text-lg font-black dark:text-white leading-none tracking-tighter">MatrizCognis</h1>
+              <h1 className="text-lg font-black dark:text-white leading-none tracking-tighter">Matriz<span className="text-orange-500">Cognis</span></h1>
               <p className="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-widest flex items-center gap-2">
                 {syncStatus === 'online' ? <span className="text-emerald-500">● ONLINE</span> : <span className="text-red-500">● {syncStatus.toUpperCase()}</span>}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {view !== 'dashboard' && (
+              <button 
+                onClick={handleGoBack}
+                className="bg-white text-orange-500 font-black px-6 py-2 rounded-xl shadow-lg hover:scale-105 transition-all text-xs border border-orange-100 uppercase tracking-widest flex items-center gap-2"
+              >
+                <ChevronLeft size={16} /> Voltar
+              </button>
+            )}
             <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-xl">
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -116,12 +129,25 @@ const App: React.FC = () => {
           <TeamDashboard teams={TEAMS} onUpdateTeams={() => {}} onEnterMatrix={(t) => { setSelectedTeam(t); setView('matrix'); }} currentUser={currentUser} />
         ) : (
           <div className="space-y-6">
-            <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl">
-               <h2 className="text-2xl font-black dark:text-white">{selectedTeam?.name}</h2>
+            {/* BOTÃO VOLTAR NO TOPO DA ÁREA DE CONTEÚDO (CONFORME IMAGEM) */}
+            <div className="flex justify-start">
+               <button 
+                onClick={handleGoBack}
+                className="bg-white text-orange-500 font-black px-8 py-3 rounded-xl shadow-[0_10px_30px_rgba(249,115,22,0.1)] hover:scale-105 transition-all text-sm border-2 border-orange-50 uppercase tracking-widest flex items-center gap-3 animate-pulse-soft"
+              >
+                <ChevronLeft size={20} /> Voltar
+              </button>
+            </div>
+
+            <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 gap-4">
+               <div>
+                  <h2 className="text-2xl font-black dark:text-white uppercase tracking-tighter">{selectedTeam?.name}</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Auditando: {selectedTeam?.project.name}</p>
+               </div>
                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                  <button onClick={() => setActiveTab('vote')} className={`px-6 py-2 rounded-lg text-xs font-black ${activeTab === 'vote' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-sm' : 'text-slate-500'}`}>VOTAÇÃO</button>
-                  <button onClick={() => setActiveTab('results')} className={`px-6 py-2 rounded-lg text-xs font-black ${activeTab === 'results' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-sm' : 'text-slate-500'}`}>MATRIZ</button>
-                  <button onClick={() => setActiveTab('ai')} className={`px-6 py-2 rounded-lg text-xs font-black ${activeTab === 'ai' ? 'bg-indigo-600 text-white' : 'text-slate-500'}`}>IA</button>
+                  <button onClick={() => setActiveTab('vote')} className={`px-6 py-2 rounded-lg text-xs font-black transition-all ${activeTab === 'vote' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-sm' : 'text-slate-500'}`}>VOTAÇÃO</button>
+                  <button onClick={() => setActiveTab('results')} className={`px-6 py-2 rounded-lg text-xs font-black transition-all ${activeTab === 'results' ? 'bg-white dark:bg-slate-700 text-orange-500 shadow-sm' : 'text-slate-500'}`}>MATRIZ</button>
+                  <button onClick={() => setActiveTab('ai')} className={`px-6 py-2 rounded-lg text-xs font-black transition-all ${activeTab === 'ai' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500'}`}>IA</button>
                </div>
             </div>
             {activeTab === 'vote' && <VotingForm member={DEFAULT_MEMBERS.find(m => currentUser.name.toLowerCase().includes(m.id)) || DEFAULT_MEMBERS[0]} votes={votes} proposals={DEFAULT_PROPOSALS} onVote={handleVote} />}
